@@ -363,9 +363,9 @@ export default class UsdMarginedFuturesMarket {
                     }
 
                     const symbolPrices: SymbolPrice[] = data.map((item: any) => <SymbolPrice>{
-                        symbol: data.symbol,
-                        price: Number(data.price),
-                        time: data.time
+                        symbol: item.symbol,
+                        price: Number(item.price),
+                        time: item.time
                     });
 
                     resolve(symbolPrices);
@@ -388,12 +388,12 @@ export default class UsdMarginedFuturesMarket {
                     }
 
                     const bestOrders: BestOrder[] = data.map((item: any) => <BestOrder>{
-                        symbol: data.symbol,
-                        bidPrice: Number(data.bidPrice),
-                        bidQty: Number(data.bidQty),
-                        askPrice: Number(data.askPrice),
-                        askQty: Number(data.askQty),
-                        transactionTime: data.time
+                        symbol: item.symbol,
+                        bidPrice: Number(item.bidPrice),
+                        bidQty: Number(item.bidQty),
+                        askPrice: Number(item.askPrice),
+                        askQty: Number(item.askQty),
+                        transactionTime: item.time
                     });
 
                     resolve(bestOrders);

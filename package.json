@@ -1,0 +1,21 @@
+{
+  "name": "@ats-lab/binance-sdk",
+  "version": "2.0.0",
+  "description": "SDK for Binance",
+  "main": "./lib/index.js",
+  "typings": "./lib/index.d.ts",
+  "scripts": {
+    "postinstall": "npm run build",
+    "build": "tsc --project tsconfig-prod.json",
+    "build-dev": "tsc --project tsconfig-dev.json"
+  },
+  "author": "Bondarenko Sergei Ivanovich [kosrotoff2002@gmail.com]",
+  "license": "PRIVATE",
+  "dependencies": {
+    "@types/ats-lab": "git+https://Kosrotoff:fJNq7gXSkEENE5QgjaeD@bitbucket.org/Kosrotoff/types-ats.git",
+    "@types/node": "^17.0.23"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.3"
+  }
+}

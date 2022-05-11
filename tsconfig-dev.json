@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /*** Projects *****************************************************************************************************/
+    "incremental": true,
+    "tsBuildInfoFile": "./lib/tsconfig.dev.tsbuildinfo",
+    /*** Emit *********************************************************************************************************/
+    "watch": true,
+    "declarationMap": true,
+    "sourceMap": false,
+    "sourceRoot": "./src",
+    "inlineSourceMap": true,
+    "inlineSources": false,
+    /*** Type Checking ************************************************************************************************/
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowUnusedLabels": true,
+    "allowUnreachableCode": true
+  }
+}

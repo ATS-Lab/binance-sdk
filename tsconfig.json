@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig-checks.json",
+  "compilerOptions": {
+    /*** Language and Environment *************************************************************************************/
+    "target": "ES6",
+    /*** Modules ******************************************************************************************************/
+    "module": "commonjs",
+    "rootDir": "./src",
+    "moduleResolution": "node",
+    "baseUrl": "./src",
+    /*** Emit *********************************************************************************************************/
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "outDir": "./lib",
+    "removeComments": false,
+    /*** Interop Constraints ******************************************************************************************/
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "./src"
+  ]
+}

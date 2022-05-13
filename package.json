@@ -10,7 +10,7 @@
     "build:dev": "tsc --project tsconfig-dev.json"
   },
   "author": "Bondarenko Sergei Ivanovich [kosrotoff2002@gmail.com]",
-  "license": "PRIVATE",
+  "license": "UNLICENSED",
   "dependencies": {
     "@types/ats-lab": "git+https://Kosrotoff:fJNq7gXSkEENE5QgjaeD@bitbucket.org/Kosrotoff/types.git",
     "@types/node": "^17.0.23"

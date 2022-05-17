@@ -18,7 +18,7 @@ import {
     Trade
 } from '../types/usd-margined-futures-market';
 
-import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from 'utils';
+import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from '../utils';
 
 
 export default class UsdMarginedFuturesMarket extends Market {

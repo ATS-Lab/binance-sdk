@@ -3,7 +3,7 @@
   "compilerOptions": {
     /*** Projects *****************************************************************************************************/
     "incremental": true,
-    "tsBuildInfoFile": "./lib/tsconfig.dev.tsbuildinfo",
+    "tsBuildInfoFile": "./lib/tsconfig-dev.tsbuildinfo",
     /*** Emit *********************************************************************************************************/
     "watch": true,
     "declarationMap": true,

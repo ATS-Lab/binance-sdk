@@ -1,27 +1,34 @@
-import Client from './client';
+import Market from './market';
 
+import {MarketOptions} from '../types/market';
 import {
-    mapLastPriceCandlestick,
-    mapIndexPriceCandlestick,
-    mapMarkPriceCandlestick
-} from './utils';
+    AggregateTrade,
+    Ask,
+    BestOrder,
+    Bid,
+    ContractType,
+    ExchangeInfo,
+    FundingRate,
+    Interest,
+    Interval,
+    MarkPriceAndFundingRate,
+    OrderBook,
+    PriceChangeStatistics,
+    SymbolPrice,
+    Trade
+} from '../types/usd-margined-futures-market';
+
+import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from 'utils';
 
 
-export default class UsdMarginedFuturesMarket {
+export default class UsdMarginedFuturesMarket extends Market {
     constructor(options: MarketOptions = {}) {
         if (options.isTestnet) {
-            this.baseEndpoint = 'testnet.binancefuture.com';
+            super(options, 'testnet.binancefuture.com');
         } else {
-            this.baseEndpoint = 'fapi.binance.com';
+            super(options, 'fapi.binance.com');
         }
-        this.client = new Client(options.accountConnection, options.clientOptions);
     }
-
-
-    // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
-
-    private readonly baseEndpoint: string;
-    private readonly client: Client;
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------

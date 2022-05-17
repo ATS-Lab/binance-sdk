@@ -1,24 +1,16 @@
-import Client from './client';
+import Market from './market';
+
+import {MarketOptions} from '../types/market';
 
 
-
-export default class SpotMarket {
+export default class SpotMarket extends Market {
     constructor(options: MarketOptions = {}) {
         if (options.isTestnet) {
-            this.baseEndpoint = 'testnet.binance.vision';
+            super(options, 'testnet.binance.vision');
         } else {
-            this.baseEndpoint = 'api.binance.com';
+            super(options, 'api.binance.com');
         }
-        this.client = new Client(options.accountConnection, options.clientOptions);
     }
-
-
-
-    // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
-
-    private readonly baseEndpoint: string;
-    private readonly client: Client;
-
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
@@ -39,13 +31,5 @@ export default class SpotMarket {
                 })
                 .catch(reject);
         });
-    }
-
-    public getExchangeInfo(parameters?: {
-        symbol: string;
-    } | {
-        symbols: string[];
-    }): Promise<ExchangeInfo> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/api/v3/exchangeInfo', parameters);
     }
 }

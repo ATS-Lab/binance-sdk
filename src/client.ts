@@ -2,6 +2,8 @@ import https from 'https';
 import crypto from 'crypto';
 import querystring from 'querystring';
 
+import {ClientOptions} from './types/client';
+import {AccountConnection} from './types/market';
 
 
 const ClientOptionsDefault: ClientOptions = {
@@ -10,25 +12,22 @@ const ClientOptionsDefault: ClientOptions = {
 };
 
 
-
 export default class Client {
     constructor(
-        accountConnection?: AccountConnection,
-        options: ClientOptions = ClientOptionsDefault
+        options: ClientOptions = ClientOptionsDefault,
+        accountConnection?: AccountConnection
     ) {
-        this.accountConnection = accountConnection;
-
         Client.validateOptions(options);
-        this.options = Object.assign(ClientOptionsDefault, options);
-    }
 
+        this.options = Object.assign(ClientOptionsDefault, options);
+        this.accountConnection = accountConnection;
+    }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
-    private accountConnection: AccountConnection | undefined;
     private options: ClientOptions;
-
+    private readonly accountConnection: AccountConnection | undefined;
 
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
@@ -90,17 +89,7 @@ export default class Client {
     }
 
 
-
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
-
-    public setAccountConnection(accountConnection?: AccountConnection): void {
-        this.accountConnection = accountConnection;
-    }
-
-    public setOptions(options: ClientOptions): void {
-        Client.validateOptions(options);
-        this.options = Object.assign(ClientOptionsDefault, options);
-    }
 
     public publicRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
         path += Client.makeQueryString(parameters);

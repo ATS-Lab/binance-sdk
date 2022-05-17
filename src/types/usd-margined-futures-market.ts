@@ -1,4 +1,4 @@
-type ExchangeInfo = {
+export type ExchangeInfo = {
     exchangeFilters: ExchangeFilter[];
     rateLimits: RateLimiter[];
     serverTime: number;
@@ -9,24 +9,24 @@ type ExchangeInfo = {
 
 // ----- Rate limiters -----
 
-type RateLimiter = {
+export type RateLimiter = {
     rateLimitType: RateLimiterType;
     interval: RateLimiterInterval;
     intervalNum: number;
     limit: number;
 };
 
-type RateLimiterType = 'REQUEST_WEIGHT' | 'ORDERS';
+export type RateLimiterType = 'REQUEST_WEIGHT' | 'ORDERS';
 
-type RateLimiterInterval = 'SECOND' | 'MINUTE';
+export type RateLimiterInterval = 'SECOND' | 'MINUTE';
 
 // ----- Exchange filters -----
 
-type ExchangeFilter = any;
+export type ExchangeFilter = any;
 
 // ----- Asset info -----
 
-type AssetInfo = {
+export type AssetInfo = {
     asset: string;
     marginAvailable: boolean;
     autoAssetExchange: string;
@@ -34,7 +34,7 @@ type AssetInfo = {
 
 // ---- Symbol exchange info ----
 
-type SymbolExchangeInfo = {
+export type SymbolExchangeInfo = {
     symbol: string;
     pair: string;
     contractType: ContractType;
@@ -61,7 +61,7 @@ type SymbolExchangeInfo = {
     marketTakeBound: string;
 }
 
-type ContractType = 'PERPETUAL'
+export type ContractType = 'PERPETUAL'
     | 'CURRENT_MONTH'
     | 'NEXT_MONTH'
     | 'CURRENT_QUARTER'
@@ -70,7 +70,7 @@ type ContractType = 'PERPETUAL'
 
 // ----- Enum definitions -----
 
-type Interval =
+export type Interval =
     '1m' |
     '3m' |
     '5m' |
@@ -88,15 +88,15 @@ type Interval =
     '1M';
 
 
-type WorkingType = 'MARK_PRICE' | 'CONTRACT_PRICE';
+export type WorkingType = 'MARK_PRICE' | 'CONTRACT_PRICE';
 
-type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTX'
+export type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTX'
 
-type PositionSide = 'BOTH' | 'LONG' | 'SHORT';
+export type PositionSide = 'BOTH' | 'LONG' | 'SHORT';
 
-type OrderSide = 'BUY' | 'SELL';
+export type OrderSide = 'BUY' | 'SELL';
 
-type OrderType =
+export type OrderType =
     'LIMIT' |
     'MARKET' |
     'STOP' |
@@ -105,7 +105,7 @@ type OrderType =
     'TAKE_PROFIT_MARKET' |
     'TRAILING_STOP_MARKET';
 
-type OrderStatus =
+export type OrderStatus =
     'NEW' |
     'PARTIALLY_FILLED' |
     'FILLED' |
@@ -113,7 +113,7 @@ type OrderStatus =
     'REJECTED' |
     'EXPIRED';
 
-type ContractStatus =
+export type ContractStatus =
     'PENDING_TRADING' |
     'TRADING' |
     'PRE_DELIVERING' |
@@ -124,12 +124,12 @@ type ContractStatus =
     'CLOSE';
 
 
-type SymbolType = 'FUTURE';
+export type SymbolType = 'FUTURE';
 
 
 // ----- Symbol filters -----
 
-type SymbolFilter =
+export type SymbolFilter =
     SymbolPriceFilter |
     SymbolLotSizeFilter |
     SymbolMarketLotSizeFilter |
@@ -139,21 +139,21 @@ type SymbolFilter =
     SymbolMinNotionalFilter;
 
 
-type SymbolPriceFilter = {
+export type SymbolPriceFilter = {
     filterType: 'PRICE_FILTER';
     minPrice: string;
     maxPrice: string;
     tickSize: string;
 };
 
-type SymbolLotSizeFilter = {
+export type SymbolLotSizeFilter = {
     filterType: 'LOT_SIZE';
     minQty: string;
     maxQty: string;
     stepSize: string;
 };
 
-type SymbolMarketLotSizeFilter = {
+export type SymbolMarketLotSizeFilter = {
     filterType: 'MARKET_LOT_SIZE';
     minQty: string;
     maxQty: string;
@@ -161,29 +161,29 @@ type SymbolMarketLotSizeFilter = {
 };
 
 
-type SymbolMaxOrdersFilter = {
+export type SymbolMaxOrdersFilter = {
     filterType: 'MAX_NUM_ORDERS';
     maxNumOrders: number;
 };
 
-type SymbolMaxAlgoOrdersFilter = {
+export type SymbolMaxAlgoOrdersFilter = {
     filterType: 'MAX_NUM_ALGO_ORDERS';
     maxNumAlgoOrders: number;
 };
 
-type SymbolPercentPriceFilter = {
+export type SymbolPercentPriceFilter = {
     filterType: 'PERCENT_PRICE';
     multiplierUp: string;
     multiplierDown: string;
     multiplierDecimal: number;
 };
 
-type SymbolMinNotionalFilter = {
+export type SymbolMinNotionalFilter = {
     filterType: 'MIN_NOTIONAL';
     notional: string;
 };
 
-type OrderBook = {
+export type OrderBook = {
     lastUpdateId: number;
     messageOutputTime: number;
     transactionTime: number;
@@ -191,17 +191,17 @@ type OrderBook = {
     asks: Ask[];
 };
 
-type Bid = {
+export type Bid = {
     price: number;
     qty: number;
 };
 
-type Ask = {
+export type Ask = {
     price: number;
     qty: number;
 };
 
-type Trade = {
+export type Trade = {
     id: number;
     price: number;
     qty: number;
@@ -210,7 +210,7 @@ type Trade = {
     isBuyerMaker: boolean;
 };
 
-type AggregateTrade = {
+export type AggregateTrade = {
     aggregateTradeId: number;
     price: string;
     qty: string;
@@ -220,7 +220,7 @@ type AggregateTrade = {
     buyerIsMaker: boolean;
 };
 
-type MarkPriceAndFundingRate = {
+export type MarkPriceAndFundingRate = {
     symbol: string;
     markPrice: number;
     indexPrice: number;
@@ -231,13 +231,13 @@ type MarkPriceAndFundingRate = {
     time: number;
 };
 
-type FundingRate = {
+export type FundingRate = {
     symbol: string;
     fundingRate: number;
     fundingTime: number;
 };
 
-type PriceChangeStatistics = {
+export type PriceChangeStatistics = {
     symbol: string;
     priceChange: number;
     priceChangePercent: number;
@@ -256,13 +256,13 @@ type PriceChangeStatistics = {
     count: number;
 };
 
-type SymbolPrice = {
+export type SymbolPrice = {
   symbol: string;
   price: number;
   time: number;
 };
 
-type BestOrder = {
+export type BestOrder = {
     symbol: string;
     bidPrice: number;
     bidQty: number;
@@ -271,7 +271,7 @@ type BestOrder = {
     transactionTime: number;
 };
 
-type Interest = {
+export type Interest = {
     symbol: string;
     openInterest: number;
     transactionTime: number;

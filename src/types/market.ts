@@ -1,10 +1,13 @@
-type MarketOptions = {
+import {ClientOptions} from './client';
+
+
+export type MarketOptions = {
     accountConnection?: AccountConnection;
     clientOptions?: ClientOptions;
     isTestnet?: boolean;
 };
 
-type AccountConnection = {
+export type AccountConnection = {
     apiKey: string;
     secretKey: string;
 };

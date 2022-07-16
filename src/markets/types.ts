@@ -1,4 +1,4 @@
-import {ClientOptions} from './client';
+import {ClientOptions} from '../client/types';
 
 
 export type MarketOptions = {

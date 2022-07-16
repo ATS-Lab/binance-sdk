@@ -1,5 +1,5 @@
-import SpotMarket from './spot-market';
-import UsdMarginedFuturesMarket from './usd-margined-futures-market';
+import SpotMarket from './SpotMarket';
+import UsdMarginedFuturesMarket from './UsdMarginedFuturesMarket';
 
 
 export {

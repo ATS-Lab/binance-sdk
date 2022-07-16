@@ -2,8 +2,8 @@ import https from 'https';
 import crypto from 'crypto';
 import querystring from 'querystring';
 
-import {ClientOptions} from './types/client';
-import {AccountConnection} from './types/market';
+import {ClientOptions} from './types';
+import {AccountConnection} from '../markets/types';
 
 
 const ClientOptionsDefault: ClientOptions = {
@@ -12,12 +12,12 @@ const ClientOptionsDefault: ClientOptions = {
 };
 
 
-export default class Client {
+export default class Index {
     constructor(
         options: ClientOptions = ClientOptionsDefault,
         accountConnection?: AccountConnection
     ) {
-        Client.validateOptions(options);
+        Index.validateOptions(options);
 
         this.options = Object.assign(ClientOptionsDefault, options);
         this.accountConnection = accountConnection;
@@ -46,7 +46,7 @@ export default class Client {
     }
 
     private static makeSignedQueryString(parameters: querystring.ParsedUrlQueryInput, key: string): string {
-        const queryString = Client.makeQueryString(parameters);
+        const queryString = Index.makeQueryString(parameters);
 
         const hmac = crypto.createHmac('sha256', key);
         const signature = hmac.update(queryString).digest('hex');
@@ -92,7 +92,7 @@ export default class Client {
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
     public publicRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
-        path += Client.makeQueryString(parameters);
+        path += Index.makeQueryString(parameters);
         return this.request(baseEndpoint, path, method);
     }
 
@@ -108,7 +108,7 @@ export default class Client {
             parameters.timestamp = Date.now();
         }
 
-        path += Client.makeSignedQueryString(parameters, this.accountConnection.secretKey);
+        path += Index.makeSignedQueryString(parameters, this.accountConnection.secretKey);
 
         return this.request(baseEndpoint, path, method, {
             'Content-Type': 'application/json',

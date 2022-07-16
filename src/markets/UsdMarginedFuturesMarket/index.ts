@@ -1,6 +1,6 @@
-import Market from './market';
+import Market from '../market';
 
-import {MarketOptions} from '../types/market';
+import {MarketOptions} from '../types';
 import {
     AggregateTrade,
     Ask,
@@ -16,9 +16,9 @@ import {
     PriceChangeStatistics,
     SymbolPrice,
     Trade
-} from '../types/usd-margined-futures-market';
+} from './types';
 
-import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from '../utils';
+import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from '../../utils';
 
 
 export default class UsdMarginedFuturesMarket extends Market {

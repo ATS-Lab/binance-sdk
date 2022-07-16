@@ -1,6 +1,6 @@
-import Market from './market';
+import Market from '../market';
 
-import {MarketOptions} from '../types/market';
+import {MarketOptions} from '../types';
 
 
 export default class SpotMarket extends Market {

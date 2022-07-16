@@ -4,21 +4,26 @@ import {MarketOptions} from './types';
 
 
 export default abstract class Market {
-    protected constructor(options: MarketOptions, baseEndpoint: string, streamEndpoint: string) {
+    protected constructor(options: MarketOptions) {
         this.client = new Client(options.clientOptions, options.accountConnection);
-        this.baseEndpoint = baseEndpoint;
-        this.streamEndpoint = streamEndpoint;
+        this.setEndpoints(!!options.isTestnet);
     }
 
 
     // ----- [ PROTECTED PROPERTIES ] ----------------------------------------------------------------------------------
 
-    protected readonly client: Client;
-    protected readonly baseEndpoint: string;
-    protected readonly streamEndpoint: string;
+    protected baseEndpoint: string;
+    protected streamEndpoint: string;
 
 
-    // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
+    // ----- [ PUBLIC PROPERTIES ] -------------------------------------------------------------------------------------
+
+    public readonly client: Client;
+
+
+    // ----- [ PUBLIC ABSTRACT METHODS ] -------------------------------------------------------------------------------
+
+    public abstract setEndpoints(isTestnet: boolean): void;
 
     public abstract testConnectivity(): Promise<boolean>;
 

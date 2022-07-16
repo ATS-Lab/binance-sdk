@@ -2,4 +2,4 @@ export {
     mapLastPriceCandlestick,
     mapIndexPriceCandlestick,
     mapMarkPriceCandlestick
-} from './map-candlestick';
+} from './mapCandlestick';

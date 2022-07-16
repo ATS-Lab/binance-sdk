@@ -5,15 +5,21 @@ import {MarketOptions} from '../types';
 
 export default class SpotMarket extends Market {
     constructor(options: MarketOptions = {}) {
-        if (options.isTestnet) {
-            super(options, 'testnet.binance.vision', 'wss://testnet.binance.vision');
-        } else {
-            super(options, 'api.binance.com', 'wss://stream.binance.com');
-        }
+        super(options);
     }
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
+
+    public override setEndpoints(isTestnet: boolean): void {
+        if (isTestnet) {
+            this.baseEndpoint = 'testnet.binance.vision';
+            this.streamEndpoint = 'wss://testnet.binance.vision';
+        } else {
+            this.baseEndpoint = 'api.binance.com';
+            this.streamEndpoint = 'wss://stream.binance.com';
+        }
+    }
 
     public override testConnectivity(): Promise<boolean> {
         return new Promise<boolean>(resolve => {

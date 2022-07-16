@@ -3,34 +3,33 @@ import crypto from 'crypto';
 import querystring from 'querystring';
 
 import {ClientOptions} from './types';
-import {AccountConnection} from '../markets/types';
+import {AccountConnection} from '../types';
 
 
-const ClientOptionsDefault: ClientOptions = {
+const DefaultClientOptions: ClientOptions = {
     autoTimestamp: true,
+    replaceTimestamp: false,
     recvWindow: 5000
 };
 
 
 export default class Client {
     constructor(
-        options: ClientOptions = ClientOptionsDefault,
+        options: ClientOptions = DefaultClientOptions,
         accountConnection?: AccountConnection
     ) {
-        Client.validateOptions(options);
-
-        this.options = Object.assign(ClientOptionsDefault, options);
-        this.accountConnection = accountConnection;
+        this.setOptions(options);
+        this.setAccountConnection(accountConnection);
     }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
     private options: ClientOptions;
-    private readonly accountConnection: AccountConnection | undefined;
+    private accountConnection: AccountConnection | null;
 
 
-    // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
+    // ----- [ STATIC PRIVATE METHODS ] --------------------------------------------------------------------------------
 
     private static validateOptions(options: ClientOptions): void {
         if (options.recvWindow) {
@@ -52,6 +51,9 @@ export default class Client {
 
         return (queryString ? `${queryString}&` : '') + `signature=${signature}`;
     }
+
+
+    // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
 
     private request(host: string, path: string, method: string, headers = {}): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -90,6 +92,17 @@ export default class Client {
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
+    public setOptions(options?: ClientOptions): void {
+        options = Object.assign({}, DefaultClientOptions, options);
+        Client.validateOptions(options);
+
+        this.options = options;
+    }
+
+    public setAccountConnection(accountConnection?: AccountConnection): void {
+        this.accountConnection = accountConnection ?? null;
+    }
+
     public publicRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
         path += '?' + Client.makeQueryString(parameters);
         return this.request(baseEndpoint, path, method);
@@ -104,7 +117,9 @@ export default class Client {
             parameters.recvWindow = parameters.recvWindow ?? this.options.recvWindow;
         }
         if (this.options.autoTimestamp) {
-            parameters.timestamp = parameters.timestamp ?? Date.now();
+            if ((parameters.timestamp === undefined) || this.options.replaceTimestamp) {
+                parameters.timestamp = Date.now();
+            }
         }
 
         path += '?' + Client.makeSignedQueryString(parameters, this.accountConnection.secretKey);

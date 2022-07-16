@@ -13,7 +13,7 @@ import {
     FundingRate,
     Interest,
     Interval,
-    LeverageBracket, MarginType,
+    LeverageBracket,
     MarkPriceAndFundingRate,
     OrderBook,
     OrderResponseType,
@@ -29,17 +29,14 @@ import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlesti
 
 export default class UsdMarginedFuturesMarket extends Market {
     constructor(options: MarketOptions = {}) {
-        if (options.isTestnet) {
-            super(options, 'testnet.binancefuture.com', 'wss://stream.binancefuture.com');
-        } else {
-            super(options, 'fapi.binance.com', 'wss://fstream.binance.com');
-        }
+        super(options);
 
         this.leverage = new Map<string, number>();
         this.getPositions()
             .then((positionsInfo) => {
                 positionsInfo.forEach(item => this.leverage.set(item.symbol, item.leverage));
-            });
+            })
+            .catch(() => {});
 
         if (options.accountConnection) {
             this.startUserDataStream();
@@ -69,6 +66,16 @@ export default class UsdMarginedFuturesMarket extends Market {
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
+
+    public override setEndpoints(isTestnet: boolean): void {
+        if (isTestnet) {
+            this.baseEndpoint = 'testnet.binancefuture.com';
+            this.streamEndpoint = 'wss://stream.binancefuture.com';
+        } else {
+            this.baseEndpoint = 'fapi.binance.com';
+            this.streamEndpoint = 'wss://fstream.binance.com';
+        }
+    }
 
     public override testConnectivity(): Promise<boolean> {
         return new Promise<boolean>(resolve => {
@@ -471,7 +478,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters)
-                .then(data => {
+                .then(() => {
                     resolve(true);
                 })
                 .catch(reject);

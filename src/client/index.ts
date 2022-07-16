@@ -12,12 +12,12 @@ const ClientOptionsDefault: ClientOptions = {
 };
 
 
-export default class Index {
+export default class Client {
     constructor(
         options: ClientOptions = ClientOptionsDefault,
         accountConnection?: AccountConnection
     ) {
-        Index.validateOptions(options);
+        Client.validateOptions(options);
 
         this.options = Object.assign(ClientOptionsDefault, options);
         this.accountConnection = accountConnection;
@@ -41,17 +41,16 @@ export default class Index {
     }
 
     private static makeQueryString(parameters: querystring.ParsedUrlQueryInput): string {
-        const queryString = querystring.stringify(parameters);
-        return queryString ? `?${queryString}` : queryString;
+        return querystring.stringify(parameters);
     }
 
     private static makeSignedQueryString(parameters: querystring.ParsedUrlQueryInput, key: string): string {
-        const queryString = Index.makeQueryString(parameters);
+        const queryString = Client.makeQueryString(parameters);
 
         const hmac = crypto.createHmac('sha256', key);
         const signature = hmac.update(queryString).digest('hex');
 
-        return (queryString ? `${queryString}&` : '?') + `signature=${signature}`;
+        return (queryString ? `${queryString}&` : '') + `signature=${signature}`;
     }
 
     private request(host: string, path: string, method: string, headers = {}): Promise<any> {
@@ -92,7 +91,7 @@ export default class Index {
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
     public publicRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
-        path += Index.makeQueryString(parameters);
+        path += '?' + Client.makeQueryString(parameters);
         return this.request(baseEndpoint, path, method);
     }
 
@@ -102,13 +101,13 @@ export default class Index {
         }
 
         if (this.options.recvWindow) {
-            parameters.recvWindow = this.options.recvWindow;
+            parameters.recvWindow = parameters.recvWindow ?? this.options.recvWindow;
         }
         if (this.options.autoTimestamp) {
-            parameters.timestamp = Date.now();
+            parameters.timestamp = parameters.timestamp ?? Date.now();
         }
 
-        path += Index.makeSignedQueryString(parameters, this.accountConnection.secretKey);
+        path += '?' + Client.makeSignedQueryString(parameters, this.accountConnection.secretKey);
 
         return this.request(baseEndpoint, path, method, {
             'Content-Type': 'application/json',

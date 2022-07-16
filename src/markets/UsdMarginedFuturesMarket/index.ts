@@ -1,3 +1,5 @@
+import WebSocket from 'ws';
+
 import Market from '../market';
 
 import {MarketOptions} from '../types';
@@ -11,11 +13,15 @@ import {
     FundingRate,
     Interest,
     Interval,
+    LeverageBracket, MarginType,
     MarkPriceAndFundingRate,
     OrderBook,
-    PriceChangeStatistics,
-    SymbolPrice,
-    Trade
+    OrderResponseType,
+    OrderType, PositionInfo,
+    PositionSide,
+    PriceChangeStatistics, Side,
+    SymbolPrice, TimeInForce,
+    Trade, WorkingType
 } from './types';
 
 import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from '../../utils';
@@ -24,25 +30,56 @@ import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlesti
 export default class UsdMarginedFuturesMarket extends Market {
     constructor(options: MarketOptions = {}) {
         if (options.isTestnet) {
-            super(options, 'testnet.binancefuture.com');
+            super(options, 'testnet.binancefuture.com', 'wss://stream.binancefuture.com');
         } else {
-            super(options, 'fapi.binance.com');
+            super(options, 'fapi.binance.com', 'wss://fstream.binance.com');
         }
+
+        this.leverage = new Map<string, number>();
+        this.getPositions()
+            .then((positionsInfo) => {
+                positionsInfo.forEach(item => this.leverage.set(item.symbol, item.leverage));
+            });
+
+        if (options.accountConnection) {
+            this.startUserDataStream();
+        }
+    }
+
+
+    // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
+
+    private leverage: Map<string, number>;
+
+
+    // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
+
+    private async startUserDataStream(): Promise<void> {
+        const listenKey = await this.createUserDataStream();
+        const ws = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
+
+        ws.on('message', function incoming(data) {
+            console.log(data.toString());
+        });
+
+        setInterval(() => {
+            this.keepaliveUserDataStream().catch(console.error);
+        }, 15 * 60 * 1000);
     }
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
-    public testConnectivity(): Promise<boolean> {
-        return new Promise(resolve => {
+    public override testConnectivity(): Promise<boolean> {
+        return new Promise<boolean>(resolve => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ping')
                 .then(() => resolve(true))
                 .catch(() => resolve(false));
         });
     }
 
-    public getServerTime(): Promise<number> {
-        return new Promise((resolve, reject) => {
+    public override getServerTime(): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/time')
                 .then(data => {
                     resolve(data.serverTime);
@@ -361,7 +398,7 @@ export default class UsdMarginedFuturesMarket extends Market {
      */
     public getPrice(parameters: {
         symbol?: string;
-    }): Promise<SymbolPrice | SymbolPrice[]> {
+    }): Promise<SymbolPrice[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/price', parameters)
                 .then(data => {
@@ -420,6 +457,221 @@ export default class UsdMarginedFuturesMarket extends Market {
                         openInterest: Number(data.openInterest),
                         transactionTime: data.time
                     });
+                })
+                .catch(reject);
+        });
+    }
+
+
+    // Account/Trades Endpoints
+
+    public changePositionMode(parameters: {
+        dualSidePosition: boolean;
+        recvWindow?: number;
+    }): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters)
+                .then(data => {
+                    resolve(true);
+                })
+                .catch(reject);
+        });
+    }
+
+    public createOrder(parameters: {
+        symbol: string;
+        side: Side;
+        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        positionSide?: PositionSide;
+        type: OrderType;
+        timeInForce?: TimeInForce;
+        // Cannot be sent with closePosition=true(Close-All).
+        quantity?: number;
+        // Default "false". Cannot be sent in Hedge Mode; cannot be sent with closePosition=true.
+        reduceOnly?: boolean;
+        price?: number;
+        // A unique id among open orders. Automatically generated if not sent.
+        newClientOrderId?: string;
+        // Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        stopPrice?: number;
+        closePosition?: boolean;
+        // Used with TRAILING_STOP_MARKET orders, default as the latest price(supporting different workingType).
+        activationPrice?: number;
+        // Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%.
+        callbackRate?: number;
+        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+        workingType?: WorkingType;
+        // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        priceProtect?: boolean;
+        newOrderRespType?: OrderResponseType;
+        timestamp?: number;
+    }): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/order', parameters)
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(reject);
+        });
+    }
+
+    public createBatchOrders(parameters: {
+        symbol: string;
+        side: Side;
+        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        positionSide?: PositionSide;
+        type: OrderType;
+        timeInForce?: TimeInForce;
+        // Cannot be sent with closePosition=true(Close-All).
+        quantity?: number;
+        // Default "false". Cannot be sent in Hedge Mode; cannot be sent with closePosition=true.
+        reduceOnly?: boolean;
+        price?: number;
+        // A unique id among open orders. Automatically generated if not sent.
+        newClientOrderId?: string;
+        // Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        stopPrice?: number;
+        closePosition?: boolean;
+        // Used with TRAILING_STOP_MARKET orders, default as the latest price(supporting different workingType).
+        activationPrice?: number;
+        // Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%.
+        callbackRate?: number;
+        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+        workingType?: WorkingType;
+        // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        priceProtect?: boolean;
+        newOrderRespType?: OrderResponseType;
+        timestamp?: number;
+    }[]): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/batchOrders', parameters)
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(reject);
+        });
+    }
+
+    public addTpAndSl(parameters: {
+        symbol: string;
+        side: Side;
+        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        positionSide?: PositionSide;
+        timeInForce?: TimeInForce;
+        quantity: number;
+        price: number;
+        // %ROE
+        takeProfit: number;
+        // %ROE
+        stopLoss: number;
+        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+        workingType?: WorkingType;
+        newOrderRespType?: OrderResponseType;
+        timestamp?: number;
+    }): Promise<any> {
+        const common = Object.assign(
+            {
+                symbol: parameters.symbol,
+                quantity: parameters.quantity,
+            },
+            (parameters.positionSide ? {positionSide: parameters.positionSide} : {}),
+            (parameters.timeInForce ? {timeInForce: parameters.timeInForce} : {}),
+            (parameters.workingType ? {workingType: parameters.workingType} : {}),
+            (parameters.newOrderRespType ? {newOrderRespType: parameters.newOrderRespType} : {}),
+            (parameters.timestamp ? {timestamp: parameters.timestamp} : {})
+        );
+
+        return this.createBatchOrders([
+            Object.assign({
+                symbol: parameters.symbol,
+                side: (parameters.side == 'BUY' ? 'SELL' : 'BUY'),
+                type: 'TAKE_PROFIT_MARKET',
+                stopPrice: Math.trunc(parameters.price * (1 + (parameters.side == 'BUY' ? 1 : -1) * parameters.takeProfit / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
+                closePosition: true,
+                priceProtect: true,
+            }, common),
+            Object.assign({
+                symbol: parameters.symbol,
+                side: (parameters.side == 'BUY' ? 'SELL' : 'BUY'),
+                type: 'STOP_MARKET',
+                stopPrice: Math.trunc(parameters.price * (1 - (parameters.side == 'BUY' ? 1 : -1) * parameters.stopLoss / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
+                closePosition: true,
+                priceProtect: true,
+            }, common)
+        ]);
+    }
+
+    public getPositions(parameters?: {
+        symbol?: string;
+        recvWindow?: number;
+        timestamp?: number;
+    }): Promise<PositionInfo[]> {
+        return new Promise((resolve, reject) => {
+            this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v2/positionRisk', parameters)
+                .then(data => {
+                    resolve(data.map((item: any) => <PositionInfo>{
+                        symbol: item.symbol,
+                        marginType: item.marginType,
+                        entryPrice: Number(item.entryPrice),
+                        isAutoAddMargin: Boolean(item.isAutoAddMargin),
+                        isolatedMargin: Number(item.isolatedMargin),
+                        leverage: Number(item.leverage),
+                        liquidationPrice: Number(item.liquidationPrice),
+                        markPrice: Number(item.markPrice),
+                        maxNotionalValue: Number(item.maxNotionalValue),
+                        positionAmt: Number(item.positionAmt),
+                        notional: Number(item.notional),
+                        isolatedWallet: Number(item.isolatedWallet),
+                        unRealizedProfit: Number(item.unRealizedProfit),
+                        positionSide: item.positionSide,
+                        updateTime: item.updateTime
+                    }));
+                })
+                .catch(reject);
+        });
+    }
+
+    public getLeverageBracket(parameters?: {
+        symbol?: string;
+        recvWindow?: number;
+        timestamp?: number;
+    }): Promise<LeverageBracket> {
+        return new Promise((resolve, reject) => {
+            this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters)
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(reject);
+        });
+    }
+
+    // User Data Streams
+
+    public createUserDataStream(): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey')
+                .then(data => {
+                    resolve(data.listenKey);
+                })
+                .catch(reject);
+        });
+    }
+
+    public keepaliveUserDataStream(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey')
+                .then(() => {
+                    resolve();
+                })
+                .catch(reject);
+        });
+    }
+
+    public closeUserDataStream(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey')
+                .then(() => {
+                    resolve();
                 })
                 .catch(reject);
         });

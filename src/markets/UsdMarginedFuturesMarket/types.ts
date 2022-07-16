@@ -90,7 +90,7 @@ export type Interval =
 
 export type WorkingType = 'MARK_PRICE' | 'CONTRACT_PRICE';
 
-export type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTX'
+export type TimeInForce = 'GTE_GTC' | 'IOC' | 'FOK' | 'GTX'
 
 export type PositionSide = 'BOTH' | 'LONG' | 'SHORT';
 
@@ -275,4 +275,37 @@ export type Interest = {
     symbol: string;
     openInterest: number;
     transactionTime: number;
+};
+
+export type OrderResponseType = 'ACK' | 'RESULT';
+
+export type Side = 'BUY' | 'SELL';
+
+export type MarginType = 'isolated' | 'cross';
+
+export type PositionInfo = {
+    symbol: string;
+    marginType: MarginType;
+    entryPrice: number;
+    isAutoAddMargin: boolean;
+    isolatedMargin: number;
+    leverage: number;
+    liquidationPrice: number;
+    markPrice: number;
+    maxNotionalValue: number;
+    positionAmt: number;
+    notional: number;
+    isolatedWallet: number;
+    unRealizedProfit: number;
+    positionSide: PositionSide;
+    updateTime: number;
+};
+
+export type LeverageBracket = {
+    bracket: number;
+    initialLeverage: number;
+    notionalCap: number;
+    notionalFloor: number;
+    maintMarginRatio: number;
+    cum: number;
 };

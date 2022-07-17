@@ -22,7 +22,7 @@ export default class SpotMarket extends Market {
     }
 
     public override testConnectivity(): Promise<boolean> {
-        return new Promise<boolean>(resolve => {
+        return new Promise<boolean>((resolve) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/api/v3/ping')
                 .then(() => resolve(true))
                 .catch(() => resolve(false));
@@ -32,7 +32,7 @@ export default class SpotMarket extends Market {
     public override getServerTime(): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, 'api/v1/time')
-                .then(data => {
+                .then((data) => {
                     resolve(data.serverTime);
                 })
                 .catch(reject);

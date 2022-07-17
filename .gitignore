@@ -1,4 +1,9 @@
+# Development
 /.idea
+/.vs
+
+# Dependencies
 /node_modules
-/package-lock.json
+
+# Product
 /lib

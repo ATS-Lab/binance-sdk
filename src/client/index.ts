@@ -1,6 +1,6 @@
 import https from 'https';
 import crypto from 'crypto';
-import querystring from 'querystring';
+import qs from 'qs';
 
 import {ClientOptions} from './types';
 import {AccountConnection} from '../types';
@@ -39,11 +39,11 @@ export default class Client {
         }
     }
 
-    private static makeQueryString(parameters: querystring.ParsedUrlQueryInput): string {
-        return querystring.stringify(parameters);
+    private static makeQueryString(parameters: any): string {
+        return qs.stringify(parameters);
     }
 
-    private static makeSignedQueryString(parameters: querystring.ParsedUrlQueryInput, key: string): string {
+    private static makeSignedQueryString(parameters: any, key: string): string {
         const queryString = Client.makeQueryString(parameters);
 
         const hmac = crypto.createHmac('sha256', key);
@@ -61,12 +61,12 @@ export default class Client {
                 host,
                 path,
                 method,
-                headers,
+                headers
             };
 
-            const request = https.request(options, incomingMessage => {
+            const request = https.request(options, (incomingMessage) => {
                 let response = '';
-                incomingMessage.on('data', data => {
+                incomingMessage.on('data', (data) => {
                     response += data;
                 });
 
@@ -81,7 +81,7 @@ export default class Client {
                 });
             });
 
-            request.on('error', error => {
+            request.on('error', (error) => {
                 reject(error.message);
             });
 
@@ -110,7 +110,9 @@ export default class Client {
 
     public privateRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
         if (!this.accountConnection) {
-            return Promise.reject('Unable to make an authenticated call because the API key and secret key was not provided');
+            return Promise.reject(
+                new Error('Unable to make an authenticated call because the API key and secret key was not provided')
+            );
         }
 
         if (this.options.recvWindow) {

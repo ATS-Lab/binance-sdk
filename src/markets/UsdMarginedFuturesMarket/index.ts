@@ -34,9 +34,9 @@ export default class UsdMarginedFuturesMarket extends Market {
         this.leverage = new Map<string, number>();
         this.getPositions()
             .then((positionsInfo) => {
-                positionsInfo.forEach(item => this.leverage.set(item.symbol, item.leverage));
+                positionsInfo.forEach((item) => this.leverage.set(item.symbol, item.leverage));
             })
-            .catch(() => {});
+            .catch(console.error);
 
         if (options.accountConnection) {
             this.startUserDataStream();
@@ -60,7 +60,8 @@ export default class UsdMarginedFuturesMarket extends Market {
         });
 
         setInterval(() => {
-            this.keepaliveUserDataStream().catch(console.error);
+            this.keepaliveUserDataStream()
+                .catch(console.error);
         }, 15 * 60 * 1000);
     }
 
@@ -78,7 +79,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }
 
     public override testConnectivity(): Promise<boolean> {
-        return new Promise<boolean>(resolve => {
+        return new Promise<boolean>((resolve) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ping')
                 .then(() => resolve(true))
                 .catch(() => resolve(false));
@@ -88,7 +89,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     public override getServerTime(): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/time')
-                .then(data => {
+                .then((data) => {
                     resolve(data.serverTime);
                 })
                 .catch(reject);
@@ -106,7 +107,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<OrderBook> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/depth', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(<OrderBook>{
                         lastUpdateId: data.lastUpdateId,
                         messageOutputTime: data.E,
@@ -150,7 +151,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<Trade[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/historicalTrades', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => <Trade>{
                             id: item.id,
@@ -190,7 +191,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<AggregateTrade[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/aggTrades', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => <AggregateTrade>{
                             aggregateTradeId: item.a,
@@ -222,7 +223,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<LastPriceCandlestick[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/klines', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => mapLastPriceCandlestick(item))
                     );
@@ -249,7 +250,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<LastPriceCandlestick[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/continuousKlines', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => mapLastPriceCandlestick(item))
                     );
@@ -275,7 +276,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<IndexPriceCandlestick[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/indexPriceKlines', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => mapIndexPriceCandlestick(item))
                     );
@@ -301,7 +302,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<MarkPriceCandlestick[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/markPriceKlines', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => mapMarkPriceCandlestick(item))
                     );
@@ -315,7 +316,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<MarkPriceAndFundingRate> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/premiumIndex', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(<MarkPriceAndFundingRate>{
                         symbol: data.symbol,
                         markPrice: Number(data.markPrice),
@@ -349,7 +350,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<FundingRate[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/fundingRate', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(
                         data.map((item: any) => <FundingRate>{
                             symbol: item.signal,
@@ -370,7 +371,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<PriceChangeStatistics | PriceChangeStatistics[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/24hr', parameters)
-                .then(data => {
+                .then((data) => {
                     if (!Array.isArray(data)) {
                         data = [data];
                     }
@@ -408,7 +409,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<SymbolPrice[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/price', parameters)
-                .then(data => {
+                .then((data) => {
                     if (!Array.isArray(data)) {
                         data = [data];
                     }
@@ -433,7 +434,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<BestOrder | BestOrder[]> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters)
-                .then(data => {
+                .then((data) => {
                     if (!Array.isArray(data)) {
                         data = [data];
                     }
@@ -458,7 +459,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<Interest> {
         return new Promise((resolve, reject) => {
             this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(<Interest>{
                         symbol: data.symbol,
                         openInterest: Number(data.openInterest),
@@ -515,7 +516,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<any> {
         return new Promise((resolve, reject) => {
             this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/order', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(data);
                 })
                 .catch(reject);
@@ -552,7 +553,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }[]): Promise<any> {
         return new Promise((resolve, reject) => {
             this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/batchOrders', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(data);
                 })
                 .catch(reject);
@@ -579,7 +580,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         const common = Object.assign(
             {
                 symbol: parameters.symbol,
-                quantity: parameters.quantity,
+                quantity: parameters.quantity
             },
             (parameters.positionSide ? {positionSide: parameters.positionSide} : {}),
             (parameters.timeInForce ? {timeInForce: parameters.timeInForce} : {}),
@@ -591,19 +592,19 @@ export default class UsdMarginedFuturesMarket extends Market {
         return this.createBatchOrders([
             Object.assign({
                 symbol: parameters.symbol,
-                side: (parameters.side == 'BUY' ? 'SELL' : 'BUY'),
+                side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
                 type: 'TAKE_PROFIT_MARKET',
                 stopPrice: Math.trunc(parameters.price * (1 + (parameters.side == 'BUY' ? 1 : -1) * parameters.takeProfit / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
                 closePosition: true,
-                priceProtect: true,
+                priceProtect: true
             }, common),
             Object.assign({
                 symbol: parameters.symbol,
-                side: (parameters.side == 'BUY' ? 'SELL' : 'BUY'),
+                side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
                 type: 'STOP_MARKET',
                 stopPrice: Math.trunc(parameters.price * (1 - (parameters.side == 'BUY' ? 1 : -1) * parameters.stopLoss / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
                 closePosition: true,
-                priceProtect: true,
+                priceProtect: true
             }, common)
         ]);
     }
@@ -615,7 +616,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<PositionInfo[]> {
         return new Promise((resolve, reject) => {
             this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v2/positionRisk', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(data.map((item: any) => <PositionInfo>{
                         symbol: item.symbol,
                         marginType: item.marginType,
@@ -645,7 +646,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     }): Promise<LeverageBracket> {
         return new Promise((resolve, reject) => {
             this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters)
-                .then(data => {
+                .then((data) => {
                     resolve(data);
                 })
                 .catch(reject);
@@ -657,7 +658,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     public createUserDataStream(): Promise<string> {
         return new Promise<string>((resolve, reject) => {
             this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey')
-                .then(data => {
+                .then((data) => {
                     resolve(data.listenKey);
                 })
                 .catch(reject);

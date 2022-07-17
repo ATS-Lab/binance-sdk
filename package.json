@@ -7,17 +7,24 @@
   "scripts": {
     "postinstall": "npm run build",
     "build": "tsc --project tsconfig-prod.json",
-    "build:dev": "tsc --project tsconfig-dev.json"
+    "build:dev": "tsc --project tsconfig-dev.json",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "npm run lint -- --fix"
   },
   "author": "Bondarenko Sergei Ivanovich [kosrotoff2002@gmail.com]",
   "license": "UNLICENSED",
   "dependencies": {
-    "@types/ats-lab": "git+https://Kosrotoff:fJNq7gXSkEENE5QgjaeD@bitbucket.org/Kosrotoff/types.git",
-    "@types/node": "^17.0.23",
+    "qs": "^6.11.0",
     "ws": "^8.8.0"
   },
   "devDependencies": {
+    "@ats-lab/eslint-config": "git+https://github.com/ATS-Lab/eslint-config.git",
+    "@types/ats-lab": "git+https://github.com/ATS-Lab/types.git",
+    "@types/node": "^17.0.23",
+    "@types/qs": "^6.9.7",
     "@types/ws": "^8.5.3",
+    "@typescript-eslint/parser": "^5.30.6",
+    "eslint": "^8.20.0",
     "typescript": "^4.6.3"
   }
 }

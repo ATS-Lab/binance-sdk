@@ -11,8 +11,19 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "npm run lint -- --fix"
   },
-  "author": "Bondarenko Sergei Ivanovich [kosrotoff2002@gmail.com]",
-  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ATS-Lab/binance-sdk.git"
+  },
+  "author": {
+    "name": "Sergei Bondarenko",
+    "email": "kosrotoff2002@gmail.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ATS-Lab/binance-sdk/issues"
+  },
+  "homepage": "https://github.com/ATS-Lab/binance-sdk#readme",
   "dependencies": {
     "qs": "^6.11.0",
     "ws": "^8.8.0"

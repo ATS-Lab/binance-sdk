@@ -4,27 +4,17 @@ import Market from '../market';
 
 import {MarketOptions} from '../types';
 import {
-    AggregateTrade,
-    Ask,
-    BestOrder,
-    Bid,
-    ContractType,
-    ExchangeInfo,
-    FundingRate,
-    Interest,
-    Interval,
-    LeverageBracket,
-    MarkPriceAndFundingRate,
-    OrderBook,
-    OrderResponseType,
-    OrderType, PositionInfo,
-    PositionSide,
-    PriceChangeStatistics, Side,
-    SymbolPrice, TimeInForce,
-    Trade, WorkingType
+    AggregateTrade, Ask, BestOrder, Bid, ContractType, ExchangeInfo, FundingRate, Interest, Interval, LeverageBracket,
+    MarkPriceAndFundingRate, OrderBook, OrderResponseType, OrderType, PositionInfo, PositionMode, PositionSide,
+    PriceChangeStatistics, Side, SymbolPrice, TimeInForce, Trade, WorkingType
 } from './types';
+import {ResponseConverter} from '../../client/types';
 
-import {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from '../../utils';
+import {
+    mapLastPriceCandlestick,
+    mapIndexPriceCandlestick,
+    mapMarkPriceCandlestick
+} from '../../utils';
 
 
 export default class UsdMarginedFuturesMarket extends Market {
@@ -78,26 +68,24 @@ export default class UsdMarginedFuturesMarket extends Market {
         }
     }
 
+    // Market data endpoints
+
     public override testConnectivity(): Promise<boolean> {
         return new Promise<boolean>((resolve) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ping')
+            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ping', {})
                 .then(() => resolve(true))
                 .catch(() => resolve(false));
         });
     }
 
     public override getServerTime(): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/time')
-                .then((data) => {
-                    resolve(data.serverTime);
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => data.serverTime;
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/time', {}, responseConverter);
     }
 
     public getExchangeInfo(): Promise<ExchangeInfo> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/exchangeInfo');
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/exchangeInfo', {});
     }
 
     public getOrderBook(parameters: {
@@ -105,25 +93,21 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500.
         limit?: 5 | 10 | 20 | 50 | 100 | 500 | 1000;
     }): Promise<OrderBook> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/depth', parameters)
-                .then((data) => {
-                    resolve(<OrderBook>{
-                        lastUpdateId: data.lastUpdateId,
-                        messageOutputTime: data.E,
-                        transactionTime: data.T,
-                        bids: data.bids.map((item: [string, string]) => <Bid>{
-                            price: Number(item[0]),
-                            qty: Number(item[1])
-                        }),
-                        asks: data.asks.map((item: [string, string]) => <Ask>{
-                            price: Number(item[0]),
-                            qty: Number(item[1])
-                        })
-                    });
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <OrderBook>{
+            lastUpdateId: data.lastUpdateId,
+            messageOutputTime: data.E,
+            transactionTime: data.T,
+            bids: data.bids.map((item: [string, string]) => <Bid>{
+                price: Number(item[0]),
+                qty: Number(item[1])
+            }),
+            asks: data.asks.map((item: [string, string]) => <Ask>{
+                price: Number(item[0]),
+                qty: Number(item[1])
+            })
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/depth', parameters, responseConverter);
     }
 
     /**
@@ -135,7 +119,16 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1000;
         limit?: number;
     }): Promise<Trade[]> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/trades', parameters);
+        const responseConverter: ResponseConverter = (data: any) => <Trade>{
+            id: data.id,
+            price: Number(data.price),
+            qty: Number(data.qty),
+            quoteQty: Number(data.quoteQty),
+            time: data.time,
+            isBuyerMaker: data.isBuyerMaker
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/trades', parameters, responseConverter);
     }
 
     /**
@@ -149,22 +142,16 @@ export default class UsdMarginedFuturesMarket extends Market {
         // TradeId to fetch from. Default gets most recent trades.
         fromId?: number;
     }): Promise<Trade[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/historicalTrades', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => <Trade>{
-                            id: item.id,
-                            price: Number(item.price),
-                            qty: Number(item.qty),
-                            quoteQty: Number(item.quoteQty),
-                            time: item.time,
-                            isBuyerMaker: item.isBuyerMaker
-                        })
-                    );
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <Trade>{
+            id: data.id,
+            price: Number(data.price),
+            qty: Number(data.qty),
+            quoteQty: Number(data.quoteQty),
+            time: data.time,
+            isBuyerMaker: data.isBuyerMaker
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/historicalTrades', parameters, responseConverter);
     }
 
     /**
@@ -189,23 +176,17 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1000.
         limit?: number;
     }): Promise<AggregateTrade[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/aggTrades', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => <AggregateTrade>{
-                            aggregateTradeId: item.a,
-                            price: item.p,
-                            qty: item.q,
-                            firstTradeId: item.f,
-                            lastTradeId: item.l,
-                            timestamp: item.T,
-                            buyerIsMaker: item.m
-                        })
-                    );
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <AggregateTrade>{
+            aggregateTradeId: data.a,
+            price: Number(data.p),
+            qty: Number(data.q),
+            firstTradeId: data.f,
+            lastTradeId: data.l,
+            timestamp: data.T,
+            buyerIsMaker: data.m
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/aggTrades', parameters, responseConverter);
     }
 
     /**
@@ -221,15 +202,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1000.
         limit?: number;
     }): Promise<LastPriceCandlestick[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/klines', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => mapLastPriceCandlestick(item))
-                    );
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/klines', parameters, mapLastPriceCandlestick);
     }
 
     /**
@@ -248,15 +221,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<LastPriceCandlestick[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/continuousKlines', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => mapLastPriceCandlestick(item))
-                    );
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/continuousKlines', parameters, mapLastPriceCandlestick);
     }
 
     /**
@@ -274,15 +239,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<IndexPriceCandlestick[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/indexPriceKlines', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => mapIndexPriceCandlestick(item))
-                    );
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/indexPriceKlines', parameters, mapIndexPriceCandlestick);
     }
 
     /**
@@ -300,36 +257,24 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<MarkPriceCandlestick[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/markPriceKlines', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => mapMarkPriceCandlestick(item))
-                    );
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/markPriceKlines', parameters, mapMarkPriceCandlestick);
     }
 
-    public getMarkPriceAndFundingRate(parameters: {
-        symbol: string;
-    }): Promise<MarkPriceAndFundingRate> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/premiumIndex', parameters)
-                .then((data) => {
-                    resolve(<MarkPriceAndFundingRate>{
-                        symbol: data.symbol,
-                        markPrice: Number(data.markPrice),
-                        indexPrice: Number(data.indexPrice),
-                        estimatedSettlePrice: Number(data.estimatedSettlePrice),
-                        lastFundingRate: Number(data.lastFundingRate),
-                        nextFundingTime: data.nextFundingTime,
-                        interestRate: Number(data.interestRate),
-                        time: data.time
-                    });
-                })
-                .catch(reject);
-        });
+    public getMarkPriceAndFundingRate(parameters?: {
+        symbol?: string;
+    }): Promise<MarkPriceAndFundingRate | MarkPriceAndFundingRate[]> {
+        const responseConverter: ResponseConverter = (data: any) => <MarkPriceAndFundingRate>{
+            symbol: data.symbol,
+            markPrice: Number(data.markPrice),
+            indexPrice: Number(data.indexPrice),
+            estimatedSettlePrice: Number(data.estimatedSettlePrice),
+            lastFundingRate: Number(data.lastFundingRate),
+            nextFundingTime: data.nextFundingTime,
+            interestRate: Number(data.interestRate),
+            time: data.time
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/premiumIndex', parameters, responseConverter);
     }
 
     /**
@@ -348,19 +293,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 100; Min 1; Max 1000.
         limit?: number;
     }): Promise<FundingRate[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/fundingRate', parameters)
-                .then((data) => {
-                    resolve(
-                        data.map((item: any) => <FundingRate>{
-                            symbol: item.signal,
-                            fundingRate: Number(item.fundingRate),
-                            fundingTime: item.fundingTime
-                        })
-                    );
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <FundingRate>{
+            symbol: data.signal,
+            fundingRate: Number(data.fundingRate),
+            fundingTime: data.fundingTime
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/fundingRate', parameters, responseConverter);
     }
 
     /**
@@ -369,36 +308,26 @@ export default class UsdMarginedFuturesMarket extends Market {
     public getPriceChangeStatisticsFor24hr(parameters: {
         symbol?: string;
     }): Promise<PriceChangeStatistics | PriceChangeStatistics[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/24hr', parameters)
-                .then((data) => {
-                    if (!Array.isArray(data)) {
-                        data = [data];
-                    }
+        const responseConverter: ResponseConverter = (data: any) => <PriceChangeStatistics>{
+            symbol: data.symbol,
+            priceChange: Number(data.priceChange),
+            priceChangePercent: Number(data.priceChangePercent),
+            weightedAvgPrice: Number(data.weightedAvgPrice),
+            lastPrice: Number(data.lastPrice),
+            lastQty: Number(data.lastQty),
+            openPrice: Number(data.openPrice),
+            highPrice: Number(data.highPrice),
+            lowPrice: Number(data.lowPrice),
+            volume: Number(data.volume),
+            quoteVolume: Number(data.quoteVolume),
+            openTime: data.openTime,
+            closeTime: data.closeTime,
+            firstId: data.firstId,
+            lastId: data.lastId,
+            count: data.count
+        };
 
-                    const priceChangeStatistics: PriceChangeStatistics[] = data.map((item: any) => <PriceChangeStatistics>{
-                        symbol: item.symbol,
-                        priceChange: Number(item.priceChange),
-                        priceChangePercent: Number(item.priceChangePercent),
-                        weightedAvgPrice: Number(item.weightedAvgPrice),
-                        lastPrice: Number(item.lastPrice),
-                        lastQty: Number(item.lastQty),
-                        openPrice: Number(item.openPrice),
-                        highPrice: Number(item.highPrice),
-                        lowPrice: Number(item.lowPrice),
-                        volume: Number(item.volume),
-                        quoteVolume: Number(item.quoteVolume),
-                        openTime: item.openTime,
-                        closeTime: item.closeTime,
-                        firstId: item.firstId,
-                        lastId: item.lastId,
-                        count: item.count
-                    });
-
-                    resolve(priceChangeStatistics);
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/24hr', parameters, responseConverter);
     }
 
     /**
@@ -407,23 +336,13 @@ export default class UsdMarginedFuturesMarket extends Market {
     public getPrice(parameters: {
         symbol?: string;
     }): Promise<SymbolPrice[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/price', parameters)
-                .then((data) => {
-                    if (!Array.isArray(data)) {
-                        data = [data];
-                    }
+        const responseConverter: ResponseConverter = (data: any) => <SymbolPrice>{
+            symbol: data.symbol,
+            price: Number(data.price),
+            time: data.time
+        };
 
-                    const symbolPrices: SymbolPrice[] = data.map((item: any) => <SymbolPrice>{
-                        symbol: item.symbol,
-                        price: Number(item.price),
-                        time: item.time
-                    });
-
-                    resolve(symbolPrices);
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/price', parameters, responseConverter);
     }
 
     /**
@@ -432,42 +351,28 @@ export default class UsdMarginedFuturesMarket extends Market {
     public getBestOrder(parameters: {
         symbol?: string;
     }): Promise<BestOrder | BestOrder[]> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters)
-                .then((data) => {
-                    if (!Array.isArray(data)) {
-                        data = [data];
-                    }
+        const responseConverter: ResponseConverter = (data: any) => <BestOrder>{
+            symbol: data.symbol,
+            bidPrice: Number(data.bidPrice),
+            bidQty: Number(data.bidQty),
+            askPrice: Number(data.askPrice),
+            askQty: Number(data.askQty),
+            transactionTime: data.time
+        };
 
-                    const bestOrders: BestOrder[] = data.map((item: any) => <BestOrder>{
-                        symbol: item.symbol,
-                        bidPrice: Number(item.bidPrice),
-                        bidQty: Number(item.bidQty),
-                        askPrice: Number(item.askPrice),
-                        askQty: Number(item.askQty),
-                        transactionTime: item.time
-                    });
-
-                    resolve(bestOrders);
-                })
-                .catch(reject);
-        });
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters, responseConverter);
     }
 
     public getInterest(parameters: {
         symbol: string;
     }): Promise<Interest> {
-        return new Promise((resolve, reject) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters)
-                .then((data) => {
-                    resolve(<Interest>{
-                        symbol: data.symbol,
-                        openInterest: Number(data.openInterest),
-                        transactionTime: data.time
-                    });
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <Interest>{
+            symbol: data.symbol,
+            openInterest: Number(data.openInterest),
+            transactionTime: data.time
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters, responseConverter);
     }
 
 
@@ -477,13 +382,16 @@ export default class UsdMarginedFuturesMarket extends Market {
         dualSidePosition: boolean;
         recvWindow?: number;
     }): Promise<boolean> {
-        return new Promise<boolean>((resolve, reject) => {
-            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters)
-                .then(() => {
-                    resolve(true);
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => (data.msg == 'success');
+        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters, responseConverter);
+    }
+
+    public getPositionMode(parameters: {
+        recvWindow?: number;
+        timestamp?: number;
+    }): Promise<PositionMode> {
+        const responseConverter: ResponseConverter = (data: any) => (data.dualSidePosition ? 'HEDGE' : 'ONE_WAY');
+        return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters, responseConverter);
     }
 
     public createOrder(parameters: {
@@ -614,29 +522,25 @@ export default class UsdMarginedFuturesMarket extends Market {
         recvWindow?: number;
         timestamp?: number;
     }): Promise<PositionInfo[]> {
-        return new Promise((resolve, reject) => {
-            this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v2/positionRisk', parameters)
-                .then((data) => {
-                    resolve(data.map((item: any) => <PositionInfo>{
-                        symbol: item.symbol,
-                        marginType: item.marginType,
-                        entryPrice: Number(item.entryPrice),
-                        isAutoAddMargin: Boolean(item.isAutoAddMargin),
-                        isolatedMargin: Number(item.isolatedMargin),
-                        leverage: Number(item.leverage),
-                        liquidationPrice: Number(item.liquidationPrice),
-                        markPrice: Number(item.markPrice),
-                        maxNotionalValue: Number(item.maxNotionalValue),
-                        positionAmt: Number(item.positionAmt),
-                        notional: Number(item.notional),
-                        isolatedWallet: Number(item.isolatedWallet),
-                        unRealizedProfit: Number(item.unRealizedProfit),
-                        positionSide: item.positionSide,
-                        updateTime: item.updateTime
-                    }));
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => <PositionInfo>{
+            symbol: data.symbol,
+            marginType: data.marginType,
+            entryPrice: Number(data.entryPrice),
+            isAutoAddMargin: Boolean(data.isAutoAddMargin),
+            isolatedMargin: Number(data.isolatedMargin),
+            leverage: Number(data.leverage),
+            liquidationPrice: Number(data.liquidationPrice),
+            markPrice: Number(data.markPrice),
+            maxNotionalValue: Number(data.maxNotionalValue),
+            positionAmt: Number(data.positionAmt),
+            notional: Number(data.notional),
+            isolatedWallet: Number(data.isolatedWallet),
+            unRealizedProfit: Number(data.unRealizedProfit),
+            positionSide: data.positionSide,
+            updateTime: data.updateTime
+        };
+
+        return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v2/positionRisk', parameters, responseConverter);
     }
 
     public getLeverageBracket(parameters?: {
@@ -644,44 +548,22 @@ export default class UsdMarginedFuturesMarket extends Market {
         recvWindow?: number;
         timestamp?: number;
     }): Promise<LeverageBracket> {
-        return new Promise((resolve, reject) => {
-            this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters)
-                .then((data) => {
-                    resolve(data);
-                })
-                .catch(reject);
-        });
+        return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters);
     }
 
     // User Data Streams
 
     public createUserDataStream(): Promise<string> {
-        return new Promise<string>((resolve, reject) => {
-            this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey')
-                .then((data) => {
-                    resolve(data.listenKey);
-                })
-                .catch(reject);
-        });
+        const responseConverter: ResponseConverter = (data: any) => data.listenKey;
+
+        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey', responseConverter);
     }
 
     public keepaliveUserDataStream(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey')
-                .then(() => {
-                    resolve();
-                })
-                .catch(reject);
-        });
+        return this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey', {});
     }
 
     public closeUserDataStream(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey')
-                .then(() => {
-                    resolve();
-                })
-                .catch(reject);
-        });
+        return this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey', {});
     }
 }

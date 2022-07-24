@@ -2,13 +2,12 @@ import https from 'https';
 import crypto from 'crypto';
 import qs from 'qs';
 
-import {ClientOptions} from './types';
+import {ClientOptions, ResponseConverter} from './types';
 import {AccountConnection} from '../types';
 
 
 const DefaultClientOptions: ClientOptions = {
     autoTimestamp: true,
-    replaceTimestamp: false,
     recvWindow: 5000
 };
 
@@ -52,18 +51,38 @@ export default class Client {
         return (queryString ? `${queryString}&` : '') + `signature=${signature}`;
     }
 
+    private static processResponse(response: any, responseConverter?: ResponseConverter): any | any[] {
+        if (responseConverter) {
+            if (Array.isArray(response)) {
+                return response.map(responseConverter);
+            } else {
+                return responseConverter(response);
+            }
+        } else {
+            return response;
+        }
+    }
+
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
 
-    private request(host: string, path: string, method: string, headers = {}): Promise<any> {
-        return new Promise((resolve, reject) => {
-            const options: https.RequestOptions = {
-                host,
-                path,
-                method,
-                headers
-            };
+    private applyOptions(parameters: any): any {
+        if (!parameters) {
+            parameters = {};
+        }
 
+        if (this.options.recvWindow) {
+            parameters.recvWindow = parameters.recvWindow ?? this.options.recvWindow;
+        }
+        if (this.options.autoTimestamp && !parameters.timestamp) {
+            parameters.timestamp = Date.now();
+        }
+
+        return parameters;
+    }
+
+    private request<T>(options: https.RequestOptions, responseConverter?: ResponseConverter): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
             const request = https.request(options, (incomingMessage) => {
                 let response = '';
                 incomingMessage.on('data', (data) => {
@@ -74,15 +93,15 @@ export default class Client {
                     response = JSON.parse(response);
 
                     if (incomingMessage.statusCode === 200) {
-                        resolve(response);
+                        resolve(Client.processResponse(response, responseConverter));
                     } else {
-                        reject(response);
+                        reject(new Error(response));
                     }
                 });
             });
 
             request.on('error', (error) => {
-                reject(error.message);
+                reject(error);
             });
 
             request.end();
@@ -103,32 +122,38 @@ export default class Client {
         this.accountConnection = accountConnection ?? null;
     }
 
-    public publicRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
+    public publicRequest<T>(
+        method: string,
+        host: string,
+        path: string,
+        parameters: any,
+        responseConverter?: ResponseConverter
+    ): Promise<T> {
         path += '?' + Client.makeQueryString(parameters);
-        return this.request(baseEndpoint, path, method);
+        return this.request<T>({host, path, method}, responseConverter);
     }
 
-    public privateRequest(method: string, baseEndpoint: string, path: string, parameters: any = {}): Promise<any> {
+    public privateRequest<T>(
+        method: string,
+        host: string,
+        path: string,
+        parameters: any,
+        responseConverter?: ResponseConverter
+    ): Promise<T> {
         if (!this.accountConnection) {
             return Promise.reject(
                 new Error('Unable to make an authenticated call because the API key and secret key was not provided')
             );
         }
 
-        if (this.options.recvWindow) {
-            parameters.recvWindow = parameters.recvWindow ?? this.options.recvWindow;
-        }
-        if (this.options.autoTimestamp) {
-            if ((parameters.timestamp === undefined) || this.options.replaceTimestamp) {
-                parameters.timestamp = Date.now();
-            }
-        }
-
+        parameters = this.applyOptions(parameters);
         path += '?' + Client.makeSignedQueryString(parameters, this.accountConnection.secretKey);
 
-        return this.request(baseEndpoint, path, method, {
+        const headers = {
             'Content-Type': 'application/json',
             'X-MBX-APIKEY': this.accountConnection.apiKey
-        });
+        };
+
+        return this.request<T>({host, path, method, headers}, responseConverter);
     }
 }

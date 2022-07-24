@@ -94,6 +94,8 @@ export type TimeInForce = 'GTE_GTC' | 'IOC' | 'FOK' | 'GTX'
 
 export type PositionSide = 'BOTH' | 'LONG' | 'SHORT';
 
+export type PositionMode = 'HEDGE' | 'ONE_WAY';
+
 export type OrderSide = 'BUY' | 'SELL';
 
 export type OrderType =
@@ -212,8 +214,8 @@ export type Trade = {
 
 export type AggregateTrade = {
     aggregateTradeId: number;
-    price: string;
-    qty: string;
+    price: number;
+    qty: number;
     firstTradeId: number;
     lastTradeId: number;
     timestamp: number;

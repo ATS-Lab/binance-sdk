@@ -2,7 +2,7 @@ import https from 'https';
 import crypto from 'crypto';
 import qs from 'qs';
 
-import {ClientOptions, ResponseConverter} from './types';
+import {ClientOptions, RequestMethod, ResponseConverter} from './types';
 import {AccountConnection} from '../types';
 
 
@@ -123,7 +123,7 @@ export default class Client {
     }
 
     public publicRequest<T>(
-        method: string,
+        method: RequestMethod,
         host: string,
         path: string,
         parameters: any,
@@ -134,7 +134,7 @@ export default class Client {
     }
 
     public privateRequest<T>(
-        method: string,
+        method: RequestMethod,
         host: string,
         path: string,
         parameters: any,

@@ -3,4 +3,6 @@ export type ClientOptions = {
     recvWindow?: number;
 };
 
+export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATH';
+
 export type ResponseConverter = (data: any) => any | any[];

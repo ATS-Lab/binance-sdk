@@ -151,7 +151,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             isBuyerMaker: data.isBuyerMaker
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/historicalTrades', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/historicalTrades',
+            parameters,
+            responseConverter
+        );
     }
 
     /**
@@ -202,7 +208,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1000.
         limit?: number;
     }): Promise<LastPriceCandlestick[]> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/klines', parameters, mapLastPriceCandlestick);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/klines',
+            parameters,
+            mapLastPriceCandlestick
+        );
     }
 
     /**
@@ -221,7 +233,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<LastPriceCandlestick[]> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/continuousKlines', parameters, mapLastPriceCandlestick);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/continuousKlines',
+            parameters,
+            mapLastPriceCandlestick
+        );
     }
 
     /**
@@ -239,7 +257,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<IndexPriceCandlestick[]> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/indexPriceKlines', parameters, mapIndexPriceCandlestick);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/indexPriceKlines',
+            parameters,
+            mapIndexPriceCandlestick
+        );
     }
 
     /**
@@ -257,7 +281,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         // Default 500; Min 1; Max 1500.
         limit?: number;
     }): Promise<MarkPriceCandlestick[]> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/markPriceKlines', parameters, mapMarkPriceCandlestick);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/markPriceKlines',
+            parameters,
+            mapMarkPriceCandlestick
+        );
     }
 
     public getMarkPriceAndFundingRate(parameters?: {
@@ -274,11 +304,17 @@ export default class UsdMarginedFuturesMarket extends Market {
             time: data.time
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/premiumIndex', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/premiumIndex',
+            parameters,
+            responseConverter
+        );
     }
 
     /**
-     * If startTime and endTime are not sent, the most recent limit data's are returned.
+     * If startTime and endTime are not sent, the most recent limit data are returned.
      * <br>
      * If the number of data between startTime and endTime is larger than limit, return as startTime + limit.
      * <br>
@@ -299,7 +335,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             fundingTime: data.fundingTime
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/fundingRate', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/fundingRate',
+            parameters,
+            responseConverter
+        );
     }
 
     /**
@@ -327,7 +369,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             count: data.count
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/24hr', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/ticker/24hr',
+            parameters,
+            responseConverter
+        );
     }
 
     /**
@@ -342,7 +390,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             time: data.time
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/price', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/ticker/price',
+            parameters,
+            responseConverter
+        );
     }
 
     /**
@@ -360,7 +414,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             transactionTime: data.time
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/ticker/bookTicker',
+            parameters,
+            responseConverter
+        );
     }
 
     public getInterest(parameters: {
@@ -372,7 +432,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             transactionTime: data.time
         };
 
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ticker/bookTicker', parameters, responseConverter);
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/ticker/bookTicker',
+            parameters,
+            responseConverter
+        );
     }
 
 
@@ -383,7 +449,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         recvWindow?: number;
     }): Promise<boolean> {
         const responseConverter: ResponseConverter = (data: any) => (data.msg == 'success');
-        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters, responseConverter);
+        return this.client.privateRequest(
+            'POST',
+            this.baseEndpoint,
+            '/fapi/v1/positionSide/dual',
+            parameters,
+            responseConverter
+        );
     }
 
     public getPositionMode(parameters: {
@@ -391,7 +463,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         timestamp?: number;
     }): Promise<PositionMode> {
         const responseConverter: ResponseConverter = (data: any) => (data.dualSidePosition ? 'HEDGE' : 'ONE_WAY');
-        return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/positionSide/dual', parameters, responseConverter);
+        return this.client.privateRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/positionSide/dual',
+            parameters,
+            responseConverter
+        );
     }
 
     public createOrder(parameters: {
@@ -540,7 +618,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             updateTime: data.updateTime
         };
 
-        return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v2/positionRisk', parameters, responseConverter);
+        return this.client.privateRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v2/positionRisk',
+            parameters,
+            responseConverter
+        );
     }
 
     public getLeverageBracket(parameters?: {

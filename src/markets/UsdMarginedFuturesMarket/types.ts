@@ -41,8 +41,8 @@ export type SymbolExchangeInfo = {
     deliveryDate: number;
     onboardDate: number;
     status: ContractStatus;
-    maintMarginPercent: string;
-    requiredMarginPercent: string;
+    maintMarginPercent: number;
+    requiredMarginPercent: number;
     baseAsset: string;
     quoteAsset: string;
     marginAsset: string;
@@ -53,12 +53,12 @@ export type SymbolExchangeInfo = {
     underlyingType: string;
     underlyingSubType: string[];
     settlePlan: number;
-    triggerProtect: string;
+    triggerProtect: number;
     filters: SymbolFilter[];
     OrderType: OrderType[];
     timeInForce: TimeInForce[];
-    liquidationFee: string;
-    marketTakeBound: string;
+    liquidationFee: number;
+    marketTakeBound: number;
 }
 
 export type ContractType = 'PERPETUAL'
@@ -143,25 +143,24 @@ export type SymbolFilter =
 
 export type SymbolPriceFilter = {
     filterType: 'PRICE_FILTER';
-    minPrice: string;
-    maxPrice: string;
-    tickSize: string;
+    minPrice: number;
+    maxPrice: number;
+    tickSize: number;
 };
 
 export type SymbolLotSizeFilter = {
     filterType: 'LOT_SIZE';
-    minQty: string;
-    maxQty: string;
-    stepSize: string;
+    minQty: number;
+    maxQty: number;
+    stepSize: number;
 };
 
 export type SymbolMarketLotSizeFilter = {
     filterType: 'MARKET_LOT_SIZE';
-    minQty: string;
-    maxQty: string;
-    stepSize: string;
+    minQty: number;
+    maxQty: number;
+    stepSize: number;
 };
-
 
 export type SymbolMaxOrdersFilter = {
     filterType: 'MAX_NUM_ORDERS';
@@ -175,14 +174,14 @@ export type SymbolMaxAlgoOrdersFilter = {
 
 export type SymbolPercentPriceFilter = {
     filterType: 'PERCENT_PRICE';
-    multiplierUp: string;
-    multiplierDown: string;
+    multiplierUp: number;
+    multiplierDown: number;
     multiplierDecimal: number;
 };
 
 export type SymbolMinNotionalFilter = {
     filterType: 'MIN_NOTIONAL';
-    notional: string;
+    notional: number;
 };
 
 export type OrderBook = {
@@ -259,9 +258,9 @@ export type PriceChangeStatistics = {
 };
 
 export type SymbolPrice = {
-  symbol: string;
-  price: number;
-  time: number;
+    symbol: string;
+    price: number;
+    time: number;
 };
 
 export type BestOrder = {
@@ -273,11 +272,19 @@ export type BestOrder = {
     transactionTime: number;
 };
 
-export type Interest = {
+export type OpenInterest = {
     symbol: string;
     openInterest: number;
     transactionTime: number;
 };
+
+export type OpenInterestStatistics = {
+    symbol: string;
+    sumOpenInterest: number;
+    sumOpenInterestValue: number;
+    timestamp: number;
+};
+
 
 export type OrderResponseType = 'ACK' | 'RESULT';
 
@@ -310,4 +317,65 @@ export type LeverageBracket = {
     notionalFloor: number;
     maintMarginRatio: number;
     cum: number;
+};
+
+export type Period = '5m' | '15m' | '30m' | '1h' | '2h' | '4h' | '6h' | '12h' | '1d';
+
+export type TopLongShortAccountRatio = {
+    symbol: string;
+    longShortRatio: number;
+    longAccount: number;
+    shortAccount: number;
+    timestamp: number;
+};
+
+export type TopLongShortPositionRatio = {
+    symbol: string;
+    longShortRatio: number;
+    longAccount: number;
+    shortAccount: number;
+    timestamp: number;
+};
+
+export type GlobalLongShortAccountRatio = {
+    symbol: string;
+    longShortRatio: number;
+    longAccount: number;
+    shortAccount: number;
+    timestamp: number;
+};
+
+export type TakerLongShortRatio = {
+    buySellRatio: number;
+    buyVol: number;
+    sellVol: number;
+    timestamp: number;
+};
+
+export type CompositeIndexSymbolInfo = {
+    symbol: string;
+    time: number;
+    component: 'quoteAsset' | 'baseAsset';
+    baseAssetList: BaseAsset[];
+};
+
+export type BaseAsset = {
+    baseAsset: string;
+    quoteAsset: string;
+    weightInQuantity: number;
+    weightInPercentage: number;
+};
+
+export type MultiAssetsModeAssetIndex = {
+    symbol: string;
+    time: number;
+    index: number;
+    bidBuffer: number;
+    askBuffer: number;
+    bidRate: number;
+    askRate: number;
+    autoExchangeBidBuffer: number;
+    autoExchangeAskBuffer: number;
+    autoExchangeBidRate: number;
+    autoExchangeAskRate: number;
 };

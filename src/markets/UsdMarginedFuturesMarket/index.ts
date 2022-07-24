@@ -4,9 +4,38 @@ import Market from '../market';
 
 import {MarketOptions} from '../types';
 import {
-    AggregateTrade, Ask, BestOrder, Bid, ContractType, ExchangeInfo, FundingRate, Interest, Interval, LeverageBracket,
-    MarkPriceAndFundingRate, OrderBook, OrderResponseType, OrderType, PositionInfo, PositionMode, PositionSide,
-    PriceChangeStatistics, Side, SymbolPrice, TimeInForce, Trade, WorkingType
+    AggregateTrade,
+    Ask,
+    BestOrder,
+    Bid,
+    ContractStatus,
+    ContractType,
+    ExchangeInfo,
+    FundingRate,
+    OpenInterest,
+    Interval,
+    LeverageBracket,
+    MarkPriceAndFundingRate,
+    OpenInterestStatistics,
+    OrderBook,
+    OrderResponseType,
+    OrderType,
+    PositionInfo,
+    PositionMode,
+    PositionSide,
+    PriceChangeStatistics,
+    Side,
+    SymbolExchangeInfo,
+    SymbolFilter,
+    SymbolPrice,
+    TimeInForce,
+    Trade,
+    WorkingType,
+    Period,
+    TopLongShortAccountRatio,
+    TopLongShortPositionRatio,
+    GlobalLongShortAccountRatio,
+    TakerLongShortRatio, CompositeIndexSymbolInfo, BaseAsset, MultiAssetsModeAssetIndex
 } from './types';
 import {ResponseConverter} from '../../client/types';
 
@@ -27,10 +56,6 @@ export default class UsdMarginedFuturesMarket extends Market {
                 positionsInfo.forEach((item) => this.leverage.set(item.symbol, item.leverage));
             })
             .catch(console.error);
-
-        if (options.accountConnection) {
-            this.startUserDataStream();
-        }
     }
 
 
@@ -85,7 +110,51 @@ export default class UsdMarginedFuturesMarket extends Market {
     }
 
     public getExchangeInfo(): Promise<ExchangeInfo> {
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/exchangeInfo', {});
+        const responseConverter: ResponseConverter = (data: any) => {
+            data.symbols.forEach((symbol: SymbolExchangeInfo) => {
+                symbol.maintMarginPercent = Number(symbol.maintMarginPercent);
+                symbol.requiredMarginPercent = Number(symbol.requiredMarginPercent);
+                symbol.triggerProtect = Number(symbol.triggerProtect);
+                symbol.liquidationFee = Number(symbol.liquidationFee);
+                symbol.marketTakeBound = Number(symbol.marketTakeBound);
+                symbol.filters.forEach((filter: SymbolFilter) => {
+                    switch (filter.filterType) {
+                        case 'PRICE_FILTER':
+                            filter.minPrice = Number(filter.minPrice);
+                            filter.maxPrice = Number(filter.maxPrice);
+                            filter.tickSize = Number(filter.tickSize);
+                            break;
+                        case 'LOT_SIZE':
+                            filter.minQty = Number(filter.minQty);
+                            filter.maxQty = Number(filter.maxQty);
+                            filter.stepSize = Number(filter.stepSize);
+                            break;
+                        case 'MARKET_LOT_SIZE':
+                            filter.minQty = Number(filter.minQty);
+                            filter.maxQty = Number(filter.maxQty);
+                            filter.stepSize = Number(filter.stepSize);
+                            break;
+                        case 'MAX_NUM_ORDERS':
+                            break;
+                        case 'MAX_NUM_ALGO_ORDERS':
+                            break;
+                        case 'PERCENT_PRICE':
+                            filter.multiplierUp = Number(filter.multiplierUp);
+                            filter.multiplierDown = Number(filter.multiplierDown);
+                            break;
+                        case 'MIN_NOTIONAL':
+                            filter.notional = Number(filter.notional);
+                            break;
+                        default:
+                            throw new Error('Unknown symbol filter type');
+                    }
+                });
+            });
+
+            return data;
+        };
+
+        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/exchangeInfo', {}, responseConverter);
     }
 
     public getOrderBook(parameters: {
@@ -97,13 +166,13 @@ export default class UsdMarginedFuturesMarket extends Market {
             lastUpdateId: data.lastUpdateId,
             messageOutputTime: data.E,
             transactionTime: data.T,
-            bids: data.bids.map((item: [string, string]) => <Bid>{
-                price: Number(item[0]),
-                qty: Number(item[1])
+            bids: data.bids.map((bid: [string, string]) => <Bid>{
+                price: Number(bid[0]),
+                qty: Number(bid[1])
             }),
-            asks: data.asks.map((item: [string, string]) => <Ask>{
-                price: Number(item[0]),
-                qty: Number(item[1])
+            asks: data.asks.map((ask: [string, string]) => <Ask>{
+                price: Number(ask[0]),
+                qty: Number(ask[1])
             })
         };
 
@@ -320,7 +389,7 @@ export default class UsdMarginedFuturesMarket extends Market {
      * <br>
      * In ascending order.
      */
-    public getFundingRateHistory(parameters: {
+    public getFundingRateHistory(parameters?: {
         symbol?: string;
         // Timestamp in milliseconds to get funding rate from inclusive.
         startTime?: number;
@@ -347,7 +416,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     /**
      * If the symbol is not sent, tickers for all symbols will be returned in an array.
      */
-    public getPriceChangeStatisticsFor24hr(parameters: {
+    public getPriceChangeStatisticsFor24hr(parameters?: {
         symbol?: string;
     }): Promise<PriceChangeStatistics | PriceChangeStatistics[]> {
         const responseConverter: ResponseConverter = (data: any) => <PriceChangeStatistics>{
@@ -381,9 +450,9 @@ export default class UsdMarginedFuturesMarket extends Market {
     /**
      * If the symbol is not sent, prices for all symbols will be returned in an array.
      */
-    public getPrice(parameters: {
+    public getPrice(parameters?: {
         symbol?: string;
-    }): Promise<SymbolPrice[]> {
+    }): Promise<SymbolPrice | SymbolPrice[]> {
         const responseConverter: ResponseConverter = (data: any) => <SymbolPrice>{
             symbol: data.symbol,
             price: Number(data.price),
@@ -402,7 +471,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     /**
      * If the symbol is not sent, bookTickers for all symbols will be returned in an array.
      */
-    public getBestOrder(parameters: {
+    public getBestOrder(parameters?: {
         symbol?: string;
     }): Promise<BestOrder | BestOrder[]> {
         const responseConverter: ResponseConverter = (data: any) => <BestOrder>{
@@ -423,10 +492,10 @@ export default class UsdMarginedFuturesMarket extends Market {
         );
     }
 
-    public getInterest(parameters: {
+    public getOpenInterest(parameters: {
         symbol: string;
-    }): Promise<Interest> {
-        const responseConverter: ResponseConverter = (data: any) => <Interest>{
+    }): Promise<OpenInterest> {
+        const responseConverter: ResponseConverter = (data: any) => <OpenInterest>{
             symbol: data.symbol,
             openInterest: Number(data.openInterest),
             transactionTime: data.time
@@ -435,12 +504,209 @@ export default class UsdMarginedFuturesMarket extends Market {
         return this.client.publicRequest(
             'GET',
             this.baseEndpoint,
-            '/fapi/v1/ticker/bookTicker',
+            '/fapi/v1/openInterest',
             parameters,
             responseConverter
         );
     }
 
+    /**
+     * If startTime and endTime are not sent, the most recent candlesticks are returned.
+     * <br>
+     * Only the data of the latest 30 days is available.
+     */
+    public getOpenInterestStatistics(parameters: {
+        symbol: string;
+        period: Period;
+        // Default 30; Min 1; Max 500.
+        limit?: number;
+        startTime?: number;
+        endTime?: number;
+    }): Promise<OpenInterestStatistics[]> {
+        const responseConverter: ResponseConverter = (data: any) => <OpenInterestStatistics>{
+            symbol: data.symbol,
+            sumOpenInterest: Number(data.sumOpenInterest),
+            sumOpenInterestValue: Number(data.sumOpenInterestValue),
+            timestamp: Number(data.timestamp)
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/futures/data/openInterestHist',
+            parameters,
+            responseConverter
+        );
+    }
+
+    /**
+     * If startTime and endTime are not sent, the most recent candlesticks are returned.
+     * <br>
+     * Only the data of the latest 30 days is available.
+     */
+    public getTopLongShortAccountRatio(parameters: {
+        symbol: string;
+        period: Period;
+        // Default 30; Min 1; Max 500.
+        limit?: number;
+        startTime?: number;
+        endTime?: number;
+    }): Promise<TopLongShortAccountRatio[]> {
+        const responseConverter: ResponseConverter = (data: any) => <TopLongShortAccountRatio>{
+            symbol: data.symbol,
+            longShortRatio: Number(data.longShortRatio),
+            longAccount: Number(data.longAccount),
+            shortAccount: Number(data.shortAccount),
+            timestamp: Number(data.timestamp)
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/futures/data/topLongShortAccountRatio',
+            parameters,
+            responseConverter
+        );
+    }
+
+    /**
+     * If startTime and endTime are not sent, the most recent candlesticks are returned.
+     * <br>
+     * Only the data of the latest 30 days is available.
+     */
+    public getTopLongShortPositionRatio(parameters: {
+        symbol: string;
+        period: Period;
+        // Default 30; Min 1; Max 500.
+        limit?: number;
+        startTime?: number;
+        endTime?: number;
+    }): Promise<TopLongShortPositionRatio[]> {
+        const responseConverter: ResponseConverter = (data: any) => <TopLongShortPositionRatio>{
+            symbol: data.symbol,
+            longShortRatio: Number(data.longShortRatio),
+            longAccount: Number(data.longAccount),
+            shortAccount: Number(data.shortAccount),
+            timestamp: Number(data.timestamp)
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/futures/data/topLongShortPositionRatio',
+            parameters,
+            responseConverter
+        );
+    }
+
+    /**
+     * If startTime and endTime are not sent, the most recent candlesticks are returned.
+     * <br>
+     * Only the data of the latest 30 days is available.
+     */
+    public getGlobalLongShortAccountRatio(parameters: {
+        symbol: string;
+        period: Period;
+        // Default 30; Min 1; Max 500.
+        limit?: number;
+        startTime?: number;
+        endTime?: number;
+    }): Promise<GlobalLongShortAccountRatio[]> {
+        const responseConverter: ResponseConverter = (data: any) => <GlobalLongShortAccountRatio>{
+            symbol: data.symbol,
+            longShortRatio: Number(data.longShortRatio),
+            longAccount: Number(data.longAccount),
+            shortAccount: Number(data.shortAccount),
+            timestamp: Number(data.timestamp)
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/futures/data/globalLongShortAccountRatio',
+            parameters,
+            responseConverter
+        );
+    }
+
+    /**
+     * If startTime and endTime are not sent, the most recent candlesticks are returned.
+     * <br>
+     * Only the data of the latest 30 days is available.
+     */
+    public getTakerLongShortRatio(parameters: {
+        symbol: string;
+        period: Period;
+        // Default 30; Min 1; Max 500.
+        limit?: number;
+        startTime?: number;
+        endTime?: number;
+    }): Promise<TakerLongShortRatio[]> {
+        const responseConverter: ResponseConverter = (data: any) => <TakerLongShortRatio>{
+            buySellRatio: Number(data.buySellRatio),
+            buyVol: Number(data.buyVol),
+            sellVol: Number(data.sellVol),
+            timestamp: Number(data.timestamp)
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/futures/data/takerlongshortRatio',
+            parameters,
+            responseConverter
+        );
+    }
+
+    /**
+     * Only for composite index symbols
+     */
+    public getCompositeIndexSymbolInfo(parameters?: {
+        symbol?: string;
+    }): Promise<CompositeIndexSymbolInfo | CompositeIndexSymbolInfo[]> {
+        const responseConverter: ResponseConverter = (data: any) => {
+            data.baseAssetList.forEach((asset: BaseAsset) => {
+                asset.weightInQuantity = Number(asset.weightInQuantity);
+                asset.weightInPercentage = Number(asset.weightInPercentage);
+            });
+
+            return data;
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/indexInfo',
+            parameters,
+            responseConverter
+        );
+    }
+
+    public getMultiAssetsModeAssetIndex(parameters?: {
+        symbol?: string;
+    }): Promise<MultiAssetsModeAssetIndex | MultiAssetsModeAssetIndex[]> {
+        const responseConverter: ResponseConverter = (data: any) => <MultiAssetsModeAssetIndex>{
+            symbol: data.symbol,
+            time: data.time,
+            index: Number(data.index),
+            bidBuffer: Number(data.bidBuffer),
+            askBuffer: Number(data.askBuffer),
+            bidRate: Number(data.bidRate),
+            askRate: Number(data.askRate),
+            autoExchangeBidBuffer: Number(data.autoExchangeBidBuffer),
+            autoExchangeAskBuffer: Number(data.autoExchangeAskBuffer),
+            autoExchangeBidRate: Number(data.autoExchangeBidRate),
+            autoExchangeAskRate: Number(data.autoExchangeAskRate),
+        };
+
+        return this.client.publicRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/assetIndex',
+            parameters,
+            responseConverter
+        );
+    }
 
     // Account/Trades Endpoints
 

@@ -95,7 +95,7 @@ export default class Client {
                     if (incomingMessage.statusCode === 200) {
                         resolve(Client.processResponse(response, responseConverter));
                     } else {
-                        reject(new Error(response));
+                        reject(response);
                     }
                 });
             });

@@ -1,6 +1,6 @@
 {
   "name": "@ats-lab/binance-sdk",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "SDK for Binance",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -26,7 +26,7 @@
   "homepage": "https://github.com/ATS-Lab/binance-sdk#readme",
   "dependencies": {
     "qs": "^6.11.0",
-    "ws": "^8.8.0"
+    "ws": "^8.8.1"
   },
   "devDependencies": {
     "@ats-lab/eslint-config": "git+https://github.com/ATS-Lab/eslint-config.git",

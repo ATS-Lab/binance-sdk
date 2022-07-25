@@ -2,7 +2,7 @@ import https from 'https';
 import crypto from 'crypto';
 import qs from 'qs';
 
-import {ClientOptions, RequestMethod, ResponseConverter} from './types';
+import {ClientOptions, RequestMethod, Parameters, ResponseConverter} from './types';
 import {AccountConnection} from '../types';
 
 
@@ -38,11 +38,11 @@ export default class Client {
         }
     }
 
-    private static makeQueryString(parameters: any): string {
+    private static makeQueryString(parameters: Parameters): string {
         return qs.stringify(parameters);
     }
 
-    private static makeSignedQueryString(parameters: any, key: string): string {
+    private static makeSignedQueryString(parameters: Parameters, key: string): string {
         const queryString = Client.makeQueryString(parameters);
 
         const hmac = crypto.createHmac('sha256', key);
@@ -66,16 +66,16 @@ export default class Client {
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
 
-    private applyOptions(parameters: any): any {
+    private applyOptions(parameters: Parameters): Parameters {
         if (!parameters) {
             parameters = {};
         }
 
         if (this.options.recvWindow) {
-            parameters.recvWindow = parameters.recvWindow ?? this.options.recvWindow;
+            parameters['recvWindow'] = parameters['recvWindow'] ?? this.options.recvWindow;
         }
-        if (this.options.autoTimestamp && !parameters.timestamp) {
-            parameters.timestamp = Date.now();
+        if (this.options.autoTimestamp && !parameters['timestamp']) {
+            parameters['timestamp'] = Date.now();
         }
 
         return parameters;
@@ -126,7 +126,7 @@ export default class Client {
         method: RequestMethod,
         host: string,
         path: string,
-        parameters: any,
+        parameters: Parameters,
         responseConverter?: ResponseConverter
     ): Promise<T> {
         path += '?' + Client.makeQueryString(parameters);
@@ -137,7 +137,7 @@ export default class Client {
         method: RequestMethod,
         host: string,
         path: string,
-        parameters: any,
+        parameters: Parameters,
         responseConverter?: ResponseConverter
     ): Promise<T> {
         if (!this.accountConnection) {

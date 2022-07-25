@@ -8,7 +8,6 @@ import {
     Ask,
     BestOrder,
     Bid,
-    ContractStatus,
     ContractType,
     ExchangeInfo,
     FundingRate,
@@ -66,18 +65,18 @@ export default class UsdMarginedFuturesMarket extends Market {
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
 
-    private async startUserDataStream(): Promise<void> {
-        const listenKey = await this.createUserDataStream();
-        const ws = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
+    private createUserDataStream(): Promise<string> {
+        const responseConverter: ResponseConverter = (data: any) => data.listenKey;
 
-        ws.on('message', function incoming(data) {
-            console.log(data.toString());
-        });
+        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey', {}, responseConverter);
+    }
 
-        setInterval(() => {
-            this.keepaliveUserDataStream()
-                .catch(console.error);
-        }, 15 * 60 * 1000);
+    private keepaliveUserDataStream(): Promise<void> {
+        return this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey', {});
+    }
+
+    private closeUserDataStream(): Promise<void> {
+        return this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey', {});
     }
 
 
@@ -776,33 +775,35 @@ export default class UsdMarginedFuturesMarket extends Market {
     }
 
     public createBatchOrders(parameters: {
-        symbol: string;
-        side: Side;
-        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
-        positionSide?: PositionSide;
-        type: OrderType;
-        timeInForce?: TimeInForce;
-        // Cannot be sent with closePosition=true(Close-All).
-        quantity?: number;
-        // Default "false". Cannot be sent in Hedge Mode; cannot be sent with closePosition=true.
-        reduceOnly?: boolean;
-        price?: number;
-        // A unique id among open orders. Automatically generated if not sent.
-        newClientOrderId?: string;
-        // Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
-        stopPrice?: number;
-        closePosition?: boolean;
-        // Used with TRAILING_STOP_MARKET orders, default as the latest price(supporting different workingType).
-        activationPrice?: number;
-        // Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%.
-        callbackRate?: number;
-        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
-        workingType?: WorkingType;
-        // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
-        priceProtect?: boolean;
-        newOrderRespType?: OrderResponseType;
+        batchOrders: {
+            symbol: string;
+            side: Side;
+            // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+            positionSide?: PositionSide;
+            type: OrderType;
+            timeInForce?: TimeInForce;
+            // Cannot be sent with closePosition=true(Close-All).
+            quantity?: number;
+            // Default "false". Cannot be sent in Hedge Mode; cannot be sent with closePosition=true.
+            reduceOnly?: boolean;
+            price?: number;
+            // A unique id among open orders. Automatically generated if not sent.
+            newClientOrderId?: string;
+            // Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+            stopPrice?: number;
+            closePosition?: boolean;
+            // Used with TRAILING_STOP_MARKET orders, default as the latest price(supporting different workingType).
+            activationPrice?: number;
+            // Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%.
+            callbackRate?: number;
+            // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+            workingType?: WorkingType;
+            // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+            priceProtect?: boolean;
+            newOrderRespType?: OrderResponseType;
+        }[],
         timestamp?: number;
-    }[]): Promise<any> {
+    }): Promise<any> {
         return new Promise((resolve, reject) => {
             this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/batchOrders', parameters)
                 .then((data) => {
@@ -837,28 +838,29 @@ export default class UsdMarginedFuturesMarket extends Market {
             (parameters.positionSide ? {positionSide: parameters.positionSide} : {}),
             (parameters.timeInForce ? {timeInForce: parameters.timeInForce} : {}),
             (parameters.workingType ? {workingType: parameters.workingType} : {}),
-            (parameters.newOrderRespType ? {newOrderRespType: parameters.newOrderRespType} : {}),
-            (parameters.timestamp ? {timestamp: parameters.timestamp} : {})
+            (parameters.newOrderRespType ? {newOrderRespType: parameters.newOrderRespType} : {})
         );
 
-        return this.createBatchOrders([
-            Object.assign({
-                symbol: parameters.symbol,
-                side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
-                type: 'TAKE_PROFIT_MARKET',
-                stopPrice: Math.trunc(parameters.price * (1 + (parameters.side == 'BUY' ? 1 : -1) * parameters.takeProfit / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
-                closePosition: true,
-                priceProtect: true
-            }, common),
-            Object.assign({
-                symbol: parameters.symbol,
-                side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
-                type: 'STOP_MARKET',
-                stopPrice: Math.trunc(parameters.price * (1 - (parameters.side == 'BUY' ? 1 : -1) * parameters.stopLoss / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
-                closePosition: true,
-                priceProtect: true
-            }, common)
-        ]);
+        return this.createBatchOrders({
+            batchOrders: [
+                Object.assign({
+                    symbol: parameters.symbol,
+                    side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
+                    type: 'TAKE_PROFIT_MARKET',
+                    stopPrice: Math.trunc(parameters.price * (1 + (parameters.side == 'BUY' ? 1 : -1) * parameters.takeProfit / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
+                    closePosition: true,
+                    priceProtect: true
+                }, common),
+                Object.assign({
+                    symbol: parameters.symbol,
+                    side: parameters.side == 'BUY' ? 'SELL' : 'BUY',
+                    type: 'STOP_MARKET',
+                    stopPrice: Math.trunc(parameters.price * (1 - (parameters.side == 'BUY' ? 1 : -1) * parameters.stopLoss / 100 / (this.leverage.get(parameters.symbol) ?? 1)) * 10000) / 10000,
+                    closePosition: true,
+                    priceProtect: true
+                }, common)
+            ]
+        });
     }
 
     public getPositions(parameters?: {
@@ -901,19 +903,47 @@ export default class UsdMarginedFuturesMarket extends Market {
         return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters);
     }
 
-    // User Data Streams
+    // User data streams
 
-    public createUserDataStream(): Promise<string> {
-        const responseConverter: ResponseConverter = (data: any) => data.listenKey;
+    public startUserDataStream(): Promise<WebSocket> {
+        if (this.stream) {
+            return Promise.resolve(this.stream);
+        }
 
-        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey', responseConverter);
+        return new Promise((resolve, reject) => {
+            this.createUserDataStream()
+                .then((listenKey) => {
+                    this.stream = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
+
+                    const streamUpdateTimerId = setInterval(this.keepaliveUserDataStream, 15 * 60 * 1000);
+
+                    this.stream.on('open', () => {
+                        if (!this.stream) {
+                            return;
+                        }
+
+                        resolve(this.stream);
+                    });
+
+                    this.stream.on('close', () => {
+                        if (!this.stream) {
+                            return;
+                        }
+
+                        this.closeUserDataStream()
+                            .then(() => {
+                                clearInterval(streamUpdateTimerId);
+                                this.stream = null;
+                            });
+                    });
+                })
+                .catch(reject);
+        });
     }
 
-    public keepaliveUserDataStream(): Promise<void> {
-        return this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey', {});
-    }
-
-    public closeUserDataStream(): Promise<void> {
-        return this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey', {});
+    public stopUserDataStream(): void {
+        if (this.stream) {
+            this.stream.close();
+        }
     }
 }

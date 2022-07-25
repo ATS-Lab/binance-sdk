@@ -1,3 +1,5 @@
+import WebSocket from 'ws';
+
 import Client from '../client';
 
 import {MarketOptions} from './types';
@@ -14,6 +16,7 @@ export default abstract class Market {
 
     protected baseEndpoint: string;
     protected streamEndpoint: string;
+    protected stream: WebSocket | null;
 
 
     // ----- [ PUBLIC PROPERTIES ] -------------------------------------------------------------------------------------

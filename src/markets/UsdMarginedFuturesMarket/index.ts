@@ -696,7 +696,7 @@ export default class UsdMarginedFuturesMarket extends Market {
             autoExchangeBidBuffer: Number(data.autoExchangeBidBuffer),
             autoExchangeAskBuffer: Number(data.autoExchangeAskBuffer),
             autoExchangeBidRate: Number(data.autoExchangeBidRate),
-            autoExchangeAskRate: Number(data.autoExchangeAskRate),
+            autoExchangeAskRate: Number(data.autoExchangeAskRate)
         };
 
         return this.client.publicRequest(

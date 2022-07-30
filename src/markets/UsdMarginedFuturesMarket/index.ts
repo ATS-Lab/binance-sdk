@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 
-import Market from '../market';
+import Market from '../Market';
 
 import {MarketOptions} from '../types';
 import {

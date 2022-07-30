@@ -43,6 +43,7 @@ import {
     mapIndexPriceCandlestick,
     mapMarkPriceCandlestick
 } from '../../utils';
+import {Account} from '../../types';
 
 
 export default class UsdMarginedFuturesMarket extends Market {
@@ -50,10 +51,6 @@ export default class UsdMarginedFuturesMarket extends Market {
         super(options);
 
         this.leverage = new Map<string, number>();
-
-        if (this.isAuthorized) {
-            this.initializeLeverage();
-        }
     }
 
 
@@ -64,18 +61,24 @@ export default class UsdMarginedFuturesMarket extends Market {
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
 
-    private initializeLeverage(): void {
-        Promise.all([
-            this.getPositionMode(),
-            this.getPositionInfo()
-        ])
-            .then(([positionMode, positionsInfo]) => {
-                const step = positionMode == 'ONE_WAY' ? 1 : 2;
-                for (let i = 0; i < positionsInfo.length; i += step) {
-                    this.leverage.set(positionsInfo[i].symbol, positionsInfo[i].leverage);
-                }
-            })
-            .catch(console.log);
+    private initLeverage(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            Promise.all([
+                this.getPositionMode(),
+                this.getPositionInfo()
+            ])
+                .then(([positionMode, positionsInfo]) => {
+                    this.leverage.clear();
+
+                    const step = positionMode == 'ONE_WAY' ? 1 : 2;
+                    for (let i = 0; i < positionsInfo.length; i += step) {
+                        this.leverage.set(positionsInfo[i].symbol, positionsInfo[i].leverage);
+                    }
+
+                    resolve();
+                })
+                .catch(reject);
+        });
     }
 
     private createUserDataStream(): Promise<string> {
@@ -92,10 +95,38 @@ export default class UsdMarginedFuturesMarket extends Market {
         return this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey', {});
     }
 
+    private startUserDataStream(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.createUserDataStream()
+                .then((listenKey) => {
+                    this.stream = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
+
+                    const streamUpdateTimerId = setInterval(this.keepaliveUserDataStream, 15 * 60 * 1000);
+
+                    this.stream.on('open', () => {
+                        resolve();
+                    });
+
+                    this.stream.on('close', () => {
+                        if (!this.stream) {
+                            return;
+                        }
+
+                        this.closeUserDataStream()
+                            .then(() => {
+                                clearInterval(streamUpdateTimerId);
+                                this.stream = null;
+                            });
+                    });
+                })
+                .catch(reject);
+        });
+    }
+
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
-    public override setEndpoints(isTestnet: boolean): void {
+    public override setNetwork(isTestnet: boolean): void {
         if (isTestnet) {
             this.baseEndpoint = 'testnet.binancefuture.com';
             this.streamEndpoint = 'wss://stream.binancefuture.com';
@@ -103,6 +134,26 @@ export default class UsdMarginedFuturesMarket extends Market {
             this.baseEndpoint = 'fapi.binance.com';
             this.streamEndpoint = 'wss://fstream.binance.com';
         }
+    }
+
+    public override setAccount(account?: Account): void {
+        super.setAccount(account);
+        this.leverage.clear();
+    }
+
+    public override initAccountData(): Promise<void> {
+        if (!this.isAuthorized) {
+            return Promise.reject(new Error('Not authorized'));
+        }
+
+        return new Promise((resolve, reject) => {
+            Promise.all([
+                this.initLeverage(),
+                this.startUserDataStream()
+            ])
+                .then(() => resolve())
+                .catch(reject);
+        });
     }
 
     /**
@@ -925,49 +976,5 @@ export default class UsdMarginedFuturesMarket extends Market {
         timestamp?: number;
     }): Promise<LeverageBracket> {
         return this.client.privateRequest('GET', this.baseEndpoint, '/fapi/v1/leverageBracket', parameters);
-    }
-
-    // User data streams
-
-    public startUserDataStream(): Promise<WebSocket> {
-        if (this.stream) {
-            return Promise.resolve(this.stream);
-        }
-
-        return new Promise((resolve, reject) => {
-            this.createUserDataStream()
-                .then((listenKey) => {
-                    this.stream = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
-
-                    const streamUpdateTimerId = setInterval(this.keepaliveUserDataStream, 15 * 60 * 1000);
-
-                    this.stream.on('open', () => {
-                        if (!this.stream) {
-                            return;
-                        }
-
-                        resolve(this.stream);
-                    });
-
-                    this.stream.on('close', () => {
-                        if (!this.stream) {
-                            return;
-                        }
-
-                        this.closeUserDataStream()
-                            .then(() => {
-                                clearInterval(streamUpdateTimerId);
-                                this.stream = null;
-                            });
-                    });
-                })
-                .catch(reject);
-        });
-    }
-
-    public stopUserDataStream(): void {
-        if (this.stream) {
-            this.stream.close();
-        }
     }
 }

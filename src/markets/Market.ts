@@ -4,15 +4,15 @@ import Client from '../client';
 
 import {MarketOptions} from './types';
 import {ClientOptions} from '../client/types';
-import {AccountConnection} from '../types';
+import {Account} from '../types';
 
 
 export default abstract class Market {
     protected constructor(options: MarketOptions) {
-        this.client = new Client(options.clientOptions, options.accountConnection);
+        this.client = new Client(options.clientOptions, options.account);
 
-        this.setEndpoints(!!options.isTestnet);
-        this.isAuthorized = !!options.accountConnection;
+        this.setNetwork(!!options.isTestnet);
+        this.isAuthorized = !!options.account;
     }
 
 
@@ -29,7 +29,9 @@ export default abstract class Market {
 
     // ----- [ PUBLIC ABSTRACT METHODS ] -------------------------------------------------------------------------------
 
-    public abstract setEndpoints(isTestnet: boolean): void;
+    public abstract setNetwork(isTestnet: boolean): void;
+
+    public abstract initAccountData(): Promise<void>;
 
     public abstract testConnectivity(): Promise<boolean>;
 
@@ -42,8 +44,23 @@ export default abstract class Market {
         this.client.setOptions(options);
     }
 
-    public setAccountConnection(accountConnection?: AccountConnection): void {
-        this.client.setAccountConnection(accountConnection);
-        this.isAuthorized = !!accountConnection;
+    public setAccount(account?: Account): void {
+        this.client.setAccount(account);
+
+        this.isAuthorized = !!account;
+        if (!this.isAuthorized) {
+            this.stream?.close();
+        }
+    }
+
+    public getUserDataStream(): WebSocket {
+        if (!this.isAuthorized) {
+            throw new Error('Not authorized');
+        }
+        if (!this.stream) {
+            throw new Error('Stream not yet created');
+        }
+
+        return this.stream;
     }
 }

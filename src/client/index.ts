@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import qs from 'qs';
 
 import {ClientOptions, RequestMethod, Parameters, ResponseConverter} from './types';
-import {AccountConnection} from '../types';
+import {Account} from '../types';
 
 
 const DefaultClientOptions: ClientOptions = {
@@ -15,17 +15,17 @@ const DefaultClientOptions: ClientOptions = {
 export default class Client {
     constructor(
         options: ClientOptions = DefaultClientOptions,
-        accountConnection?: AccountConnection
+        account?: Account
     ) {
         this.setOptions(options);
-        this.setAccountConnection(accountConnection);
+        this.setAccount(account);
     }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
     private options: ClientOptions;
-    private accountConnection: AccountConnection | null;
+    private account: Account | null;
 
 
     // ----- [ STATIC PRIVATE METHODS ] --------------------------------------------------------------------------------
@@ -118,8 +118,8 @@ export default class Client {
         this.options = options;
     }
 
-    public setAccountConnection(accountConnection?: AccountConnection): void {
-        this.accountConnection = accountConnection ?? null;
+    public setAccount(account?: Account): void {
+        this.account = account ?? null;
     }
 
     public publicRequest<T>(
@@ -140,18 +140,18 @@ export default class Client {
         parameters: Parameters,
         responseConverter?: ResponseConverter
     ): Promise<T> {
-        if (!this.accountConnection) {
+        if (!this.account) {
             return Promise.reject(
                 new Error('Unable to make an authenticated call because the API key and secret key was not provided')
             );
         }
 
         parameters = this.applyOptions(parameters);
-        path += '?' + Client.makeSignedQueryString(parameters, this.accountConnection.secretKey);
+        path += '?' + Client.makeSignedQueryString(parameters, this.account.secretKey);
 
         const headers = {
             'Content-Type': 'application/json',
-            'X-MBX-APIKEY': this.accountConnection.apiKey
+            'X-MBX-APIKEY': this.account.apiKey
         };
 
         return this.request<T>({host, path, method, headers}, responseConverter);

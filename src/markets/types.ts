@@ -1,9 +1,9 @@
-import {AccountConnection} from '../types';
+import {Account} from '../types';
 import {ClientOptions} from '../client/types';
 
 
 export type MarketOptions = {
-    accountConnection?: AccountConnection;
+    account?: Account;
     clientOptions?: ClientOptions;
     isTestnet?: boolean;
 };

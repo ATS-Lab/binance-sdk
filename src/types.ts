@@ -1,4 +1,4 @@
-export type AccountConnection = {
+export type Account = {
     apiKey: string;
     secretKey: string;
 };

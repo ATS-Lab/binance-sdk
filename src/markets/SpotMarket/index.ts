@@ -12,7 +12,7 @@ export default class SpotMarket extends Market {
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
-    public override setEndpoints(isTestnet: boolean): void {
+    public override setNetwork(isTestnet: boolean): void {
         if (isTestnet) {
             this.baseEndpoint = 'testnet.binance.vision';
             this.streamEndpoint = 'wss://testnet.binance.vision';
@@ -20,6 +20,10 @@ export default class SpotMarket extends Market {
             this.baseEndpoint = 'api.binance.com';
             this.streamEndpoint = 'wss://stream.binance.com';
         }
+    }
+
+    public override initAccountData(): Promise<void> {
+        return Promise.resolve();
     }
 
     public override testConnectivity(): Promise<boolean> {

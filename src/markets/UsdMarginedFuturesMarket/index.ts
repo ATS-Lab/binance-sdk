@@ -1,5 +1,3 @@
-import WebSocket from 'ws';
-
 import Market from '../Market';
 
 import {MarketOptions} from '../types';
@@ -81,46 +79,23 @@ export default class UsdMarginedFuturesMarket extends Market {
         });
     }
 
-    private createUserDataStream(): Promise<string> {
-        const responseConverter: ResponseConverter = (data: any) => data.listenKey;
 
-        return this.client.privateRequest('POST', this.baseEndpoint, '/fapi/v1/listenKey', {}, responseConverter);
+    // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
+
+    protected override createUserDataStream(): Promise<string> {
+        return this.baseCreateUserDataStream('/fapi/v1/listenKey');
     }
 
-    private keepaliveUserDataStream(): Promise<void> {
-        return this.client.privateRequest('PUT', this.baseEndpoint, '/fapi/v1/listenKey', {});
+    protected override keepaliveUserDataStream(): Promise<void> {
+        return this.baseKeepaliveUserDataStream('/fapi/v1/listenKey');
     }
 
-    private closeUserDataStream(): Promise<void> {
-        return this.client.privateRequest('DELETE', this.baseEndpoint, '/fapi/v1/listenKey', {});
+    protected override closeUserDataStream(): Promise<void> {
+        return this.baseCloseUserDataStream('/fapi/v1/listenKey');
     }
 
-    private startUserDataStream(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.createUserDataStream()
-                .then((listenKey) => {
-                    this.stream = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
-
-                    const streamUpdateTimerId = setInterval(this.keepaliveUserDataStream, 15 * 60 * 1000);
-
-                    this.stream.on('open', () => {
-                        resolve();
-                    });
-
-                    this.stream.on('close', () => {
-                        if (!this.stream) {
-                            return;
-                        }
-
-                        this.closeUserDataStream()
-                            .then(() => {
-                                clearInterval(streamUpdateTimerId);
-                                this.stream = null;
-                            });
-                    });
-                })
-                .catch(reject);
-        });
+    protected override startUserDataStream(): Promise<void> {
+        return this.baseStartUserDataStream();
     }
 
 
@@ -142,18 +117,12 @@ export default class UsdMarginedFuturesMarket extends Market {
     }
 
     public override initAccountData(): Promise<void> {
-        if (!this.isAuthorized) {
-            return Promise.reject(new Error('Not authorized'));
-        }
-
-        return new Promise((resolve, reject) => {
-            Promise.all([
+        return this.baseInitAccountData()
+            .then(() => Promise.all([
                 this.initLeverage(),
                 this.startUserDataStream()
-            ])
-                .then(() => resolve())
-                .catch(reject);
-        });
+            ]))
+            .then();
     }
 
     /**
@@ -170,17 +139,11 @@ export default class UsdMarginedFuturesMarket extends Market {
     // Market data endpoints
 
     public override testConnectivity(): Promise<boolean> {
-        return new Promise<boolean>((resolve) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/ping', {})
-                .then(() => resolve(true))
-                .catch(() => resolve(false));
-        });
+        return this.baseTestConnectivity('/fapi/v1/ping');
     }
 
     public override getServerTime(): Promise<number> {
-        const responseConverter: ResponseConverter = (data: any) => data.serverTime;
-
-        return this.client.publicRequest('GET', this.baseEndpoint, '/fapi/v1/time', {}, responseConverter);
+        return this.baseGetServerTime('/fapi/v1/time');
     }
 
     public getExchangeInfo(): Promise<ExchangeInfo> {

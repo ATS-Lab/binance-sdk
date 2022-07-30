@@ -1,12 +1,30 @@
 import Market from '../Market';
 
 import {MarketOptions} from '../types';
-import {ResponseConverter} from '../../client/types';
 
 
 export default class SpotMarket extends Market {
     constructor(options: MarketOptions = {}) {
         super(options);
+    }
+
+
+    // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
+
+    protected override createUserDataStream(): Promise<string> {
+        return this.baseCreateUserDataStream('/api/v3/userDataStream');
+    }
+
+    protected override keepaliveUserDataStream(): Promise<void> {
+        return this.baseKeepaliveUserDataStream('/api/v3/userDataStream');
+    }
+
+    protected override closeUserDataStream(): Promise<void> {
+        return this.baseCloseUserDataStream('/api/v3/userDataStream');
+    }
+
+    protected override startUserDataStream(): Promise<void> {
+        return this.baseStartUserDataStream();
     }
 
 
@@ -23,19 +41,14 @@ export default class SpotMarket extends Market {
     }
 
     public override initAccountData(): Promise<void> {
-        return Promise.resolve();
+        return this.baseInitAccountData();
     }
 
     public override testConnectivity(): Promise<boolean> {
-        return new Promise<boolean>((resolve) => {
-            this.client.publicRequest('GET', this.baseEndpoint, '/api/v3/ping', {})
-                .then(() => resolve(true))
-                .catch(() => resolve(false));
-        });
+        return this.baseTestConnectivity('/api/v3/ping');
     }
 
     public override getServerTime(): Promise<number> {
-        const responseConverter: ResponseConverter = (data: any) => data.serverTime;
-        return this.client.publicRequest('GET', this.baseEndpoint, 'api/v1/time', {}, responseConverter);
+        return this.baseGetServerTime('api/v1/time');
     }
 }

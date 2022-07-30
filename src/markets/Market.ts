@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 import Client from '../client';
 
 import {MarketOptions} from './types';
-import {ClientOptions} from '../client/types';
+import {ClientOptions, ResponseConverter} from '../client/types';
 import {Account} from '../types';
 
 
@@ -27,15 +27,82 @@ export default abstract class Market {
     protected stream: WebSocket | null;
 
 
-    // ----- [ PUBLIC ABSTRACT METHODS ] -------------------------------------------------------------------------------
+    // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
-    public abstract setNetwork(isTestnet: boolean): void;
+    protected baseInitAccountData(): Promise<void> {
+        if (!this.isAuthorized) {
+            return Promise.reject(new Error('Not authorized'));
+        }
 
-    public abstract initAccountData(): Promise<void>;
+        return this.startUserDataStream();
+    }
 
-    public abstract testConnectivity(): Promise<boolean>;
+    protected baseTestConnectivity(path: string): Promise<boolean> {
+        return new Promise<boolean>((resolve) => {
+            this.client.publicRequest('GET', this.baseEndpoint, path, {})
+                .then(() => resolve(true))
+                .catch(() => resolve(false));
+        });
+    }
 
-    public abstract getServerTime(): Promise<number>;
+    protected baseGetServerTime(path: string): Promise<number> {
+        const responseConverter: ResponseConverter = (data: any) => data.serverTime;
+
+        return this.client.publicRequest('GET', this.baseEndpoint, path, {}, responseConverter);
+    }
+
+    protected baseCreateUserDataStream(path: string): Promise<string> {
+        const responseConverter: ResponseConverter = (data: any) => data.listenKey;
+
+        return this.client.privateRequest('POST', this.baseEndpoint, path, {}, responseConverter);
+    }
+
+    protected baseKeepaliveUserDataStream(path: string): Promise<void> {
+        return this.client.privateRequest('PUT', this.baseEndpoint, path, {});
+    }
+
+    protected baseCloseUserDataStream(path: string): Promise<void> {
+        return this.client.privateRequest('DELETE', this.baseEndpoint, path, {});
+    }
+
+    protected baseStartUserDataStream(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.createUserDataStream()
+                .then((listenKey) => {
+                    this.stream = new WebSocket(`${this.streamEndpoint}/ws/${listenKey}`);
+
+                    const streamUpdateTimerId = setInterval(this.keepaliveUserDataStream, 15 * 60 * 1000);
+
+                    this.stream.on('open', () => {
+                        resolve();
+                    });
+
+                    this.stream.on('close', () => {
+                        if (!this.stream) {
+                            return;
+                        }
+
+                        this.closeUserDataStream()
+                            .then(() => {
+                                clearInterval(streamUpdateTimerId);
+                                this.stream = null;
+                            });
+                    });
+                })
+                .catch(reject);
+        });
+    }
+
+
+    // ----- [ PROTECTED ABSTRACT METHODS ] ----------------------------------------------------------------------------
+
+    protected abstract createUserDataStream(): Promise<string>;
+
+    protected abstract keepaliveUserDataStream(): Promise<void>;
+
+    protected abstract closeUserDataStream(): Promise<void>;
+
+    protected abstract startUserDataStream(): Promise<void>;
 
 
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
@@ -63,4 +130,15 @@ export default abstract class Market {
 
         return this.stream;
     }
+
+
+    // ----- [ PUBLIC ABSTRACT METHODS ] -------------------------------------------------------------------------------
+
+    public abstract setNetwork(isTestnet: boolean): void;
+
+    public abstract initAccountData(): Promise<void>;
+
+    public abstract testConnectivity(): Promise<boolean>;
+
+    public abstract getServerTime(): Promise<number>;
 }

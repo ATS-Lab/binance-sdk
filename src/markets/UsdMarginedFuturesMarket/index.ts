@@ -50,20 +50,33 @@ export default class UsdMarginedFuturesMarket extends Market {
         super(options);
 
         this.leverage = new Map<string, number>();
-        this.getPositions()
-            .then((positionsInfo) => {
-                positionsInfo.forEach((item) => this.leverage.set(item.symbol, item.leverage));
-            })
-            .catch(console.error);
+
+        if (this.isAuthorized) {
+            this.initializeLeverage();
+        }
     }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
-    private leverage: Map<string, number>;
+    private readonly leverage: Map<string, number>;
 
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
+
+    private initializeLeverage(): void {
+        Promise.all([
+            this.getPositionMode(),
+            this.getPositionInfo()
+        ])
+            .then(([positionMode, positionsInfo]) => {
+                const step = positionMode == 'ONE_WAY' ? 1 : 2;
+                for (let i = 0; i < positionsInfo.length; i += step) {
+                    this.leverage.set(positionsInfo[i].symbol, positionsInfo[i].leverage);
+                }
+            })
+            .catch(console.log);
+    }
 
     private createUserDataStream(): Promise<string> {
         const responseConverter: ResponseConverter = (data: any) => data.listenKey;
@@ -89,6 +102,17 @@ export default class UsdMarginedFuturesMarket extends Market {
         } else {
             this.baseEndpoint = 'fapi.binance.com';
             this.streamEndpoint = 'wss://fstream.binance.com';
+        }
+    }
+
+    /**
+     * Returns 0 if the symbol does not exist.
+     */
+    public getLeverage(symbol?: string): Map<string, number> | number {
+        if (symbol) {
+            return this.leverage.get(symbol) ?? 0;
+        } else {
+            return this.leverage;
         }
     }
 
@@ -723,7 +747,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         );
     }
 
-    public getPositionMode(parameters: {
+    public getPositionMode(parameters?: {
         recvWindow?: number;
         timestamp?: number;
     }): Promise<PositionMode> {
@@ -863,7 +887,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         });
     }
 
-    public getPositions(parameters?: {
+    public getPositionInfo(parameters?: {
         symbol?: string;
         recvWindow?: number;
         timestamp?: number;

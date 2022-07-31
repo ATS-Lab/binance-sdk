@@ -32,11 +32,16 @@ import {
     TopLongShortAccountRatio,
     TopLongShortPositionRatio,
     GlobalLongShortAccountRatio,
-    TakerLongShortRatio, CompositeIndexSymbolInfo, BaseAsset, MultiAssetsModeAssetIndex
+    TakerLongShortRatio,
+    CompositeIndexSymbolInfo,
+    BaseAsset,
+    MultiAssetsModeAssetIndex,
+    SymbolPrecision
 } from './types';
 import {ResponseConverter} from '../../client/types';
 
 import {
+    getNumberPrecision,
     mapLastPriceCandlestick,
     mapIndexPriceCandlestick,
     mapMarkPriceCandlestick
@@ -54,12 +59,14 @@ export default class UsdMarginedFuturesMarket extends Market {
         }, options);
 
         this.leverage = new Map<string, number>();
+        this.symbolPrecision = new Map<string, SymbolPrecision>();
     }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
     private readonly leverage: Map<string, number>;
+    private readonly symbolPrecision: Map<string, SymbolPrecision>;
 
 
     // ----- [ PRIVATE METHODS ] ---------------------------------------------------------------------------------------
@@ -76,6 +83,30 @@ export default class UsdMarginedFuturesMarket extends Market {
                         this.leverage.set(positionsInfo[i].symbol, positionsInfo[i].leverage);
                     }
 
+                    resolve();
+                })
+                .catch(reject);
+        });
+    }
+
+    private initSymbolPrecision(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.getExchangeInfo()
+                .then(({symbols}) => {
+                    symbols.forEach((symbolExchangeInfo) => {
+                        const {symbol, filters} = symbolExchangeInfo;
+                        const priceFilter = filters.find((filter) => filter.filterType == 'PRICE_FILTER');
+                        const lotSizeFilter = filters.find((filter) => filter.filterType == 'LOT_SIZE');
+
+                        this.symbolPrecision.set(symbol, {
+                            price: priceFilter?.filterType == 'PRICE_FILTER'
+                                ? getNumberPrecision(priceFilter.tickSize)
+                                : 0,
+                            quantity: lotSizeFilter?.filterType == 'LOT_SIZE'
+                                ? getNumberPrecision(lotSizeFilter.stepSize)
+                                : 0
+                        });
+                    });
                     resolve();
                 })
                 .catch(reject);
@@ -103,7 +134,8 @@ export default class UsdMarginedFuturesMarket extends Market {
             super.initAccountData()
                 .then(() => {
                     Promise.all([
-                        this.initLeverage()
+                        this.initLeverage(),
+                        this.initSymbolPrecision()
                     ])
                         .then(() => {
                             this.isAccountDataInitialized = true;
@@ -127,9 +159,6 @@ export default class UsdMarginedFuturesMarket extends Market {
         });
     }
 
-    /**
-     * Returns 0 if the symbol does not exist.
-     */
     public getLeverage(symbol?: string): Map<string, number> | number {
         if (!this.isAuthorized) {
             throw new Error('Not authorized');
@@ -147,6 +176,26 @@ export default class UsdMarginedFuturesMarket extends Market {
             return leverage;
         } else {
             return this.leverage;
+        }
+    }
+
+    public getSymbolPrecision(symbol?: string): Map<string, SymbolPrecision> | SymbolPrecision {
+        if (!this.isAuthorized) {
+            throw new Error('Not authorized');
+        }
+        if (!this.isAccountDataInitialized) {
+            throw new Error('Account data not initialized');
+        }
+
+        if (symbol) {
+            const symbolPrecision = this.symbolPrecision.get(symbol);
+            if (!symbolPrecision) {
+                throw new Error('The specified symbol does not exist');
+            }
+
+            return symbolPrecision;
+        } else {
+            return this.symbolPrecision;
         }
     }
 

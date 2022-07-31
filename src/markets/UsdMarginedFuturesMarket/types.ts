@@ -379,3 +379,8 @@ export type MultiAssetsModeAssetIndex = {
     autoExchangeBidRate: number;
     autoExchangeAskRate: number;
 };
+
+export type SymbolPrecision = {
+    price: number;
+    quantity: number;
+};

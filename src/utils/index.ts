@@ -1,5 +1,2 @@
-export {
-    mapLastPriceCandlestick,
-    mapIndexPriceCandlestick,
-    mapMarkPriceCandlestick
-} from './mapCandlestick';
+export {getNumberPrecision} from './getNumberPrecision';
+export {mapLastPriceCandlestick, mapIndexPriceCandlestick, mapMarkPriceCandlestick} from './mapCandlestick';

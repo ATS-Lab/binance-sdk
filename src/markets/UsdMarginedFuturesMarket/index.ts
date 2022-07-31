@@ -800,7 +800,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         );
     }
 
-    // Account/Trades Endpoints
+    // Account/trades endpoints
 
     public changePositionMode(parameters: {
         dualSidePosition: boolean;

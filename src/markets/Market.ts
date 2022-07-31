@@ -36,6 +36,8 @@ export default abstract class Market {
 
     // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
+    // User data streams
+
     protected createUserDataStream(): Promise<string> {
         const responseConverter: ResponseConverter = (data: any) => data.listenKey;
 
@@ -120,6 +122,8 @@ export default abstract class Market {
         });
     }
 
+    // Market data endpoints
+
     public testConnectivity(): Promise<boolean> {
         return new Promise((resolve) => {
             this.client.publicRequest('GET', this.baseEndpoint, this.paths.testConnectivity, {})
@@ -133,6 +137,8 @@ export default abstract class Market {
 
         return this.client.publicRequest('GET', this.baseEndpoint, this.paths.getServerTime, {}, responseConverter);
     }
+
+    // User data streams
 
     public getUserDataStream(): WebSocket {
         if (!this.isAuthorized) {

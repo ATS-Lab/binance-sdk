@@ -46,7 +46,13 @@ import {Account} from '../../types';
 
 export default class UsdMarginedFuturesMarket extends Market {
     constructor(options: MarketOptions = {}) {
-        super(options);
+        super({
+            testConnectivity: '/fapi/v1/ping',
+            getServerTime: '/fapi/v1/time',
+            createUserDataStream: '/fapi/v1/listenKey',
+            keepaliveUserDataStream: '/fapi/v1/listenKey',
+            closeUserDataStream: '/fapi/v1/listenKey'
+        }, options);
 
         this.leverage = new Map<string, number>();
     }
@@ -82,20 +88,8 @@ export default class UsdMarginedFuturesMarket extends Market {
 
     // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
-    protected override createUserDataStream(): Promise<string> {
-        return this.baseCreateUserDataStream('/fapi/v1/listenKey');
-    }
-
-    protected override keepaliveUserDataStream(): Promise<void> {
-        return this.baseKeepaliveUserDataStream('/fapi/v1/listenKey');
-    }
-
-    protected override closeUserDataStream(): Promise<void> {
-        return this.baseCloseUserDataStream('/fapi/v1/listenKey');
-    }
-
     protected override startUserDataStream(): Promise<void> {
-        return this.baseStartUserDataStream();
+        return super.startUserDataStream();
     }
 
 
@@ -111,40 +105,43 @@ export default class UsdMarginedFuturesMarket extends Market {
         }
     }
 
-    public override setAccount(account?: Account): void {
-        super.setAccount(account);
+    public override setAccount(account: Account | null): Promise<void> {
         this.leverage.clear();
+        return super.setAccount(account);
     }
 
     public override initAccountData(): Promise<void> {
-        return this.baseInitAccountData()
-            .then(() => Promise.all([
-                this.initLeverage(),
-                this.startUserDataStream()
-            ]))
-            .then();
+        return new Promise((resolve, reject) => {
+            Promise.all([
+                super.initAccountData(),
+                this.initLeverage()
+            ])
+                .then(() => resolve())
+                .catch(reject);
+        });
     }
 
     /**
      * Returns 0 if the symbol does not exist.
      */
     public getLeverage(symbol?: string): Map<string, number> | number {
+        if (!this.isAuthorized) {
+            throw new Error('Not authorized');
+        }
+
         if (symbol) {
-            return this.leverage.get(symbol) ?? 0;
+            const leverage = this.leverage.get(symbol);
+            if (!leverage) {
+                throw new Error('The specified symbol does not exist');
+            }
+
+            return leverage;
         } else {
             return this.leverage;
         }
     }
 
     // Market data endpoints
-
-    public override testConnectivity(): Promise<boolean> {
-        return this.baseTestConnectivity('/fapi/v1/ping');
-    }
-
-    public override getServerTime(): Promise<number> {
-        return this.baseGetServerTime('/fapi/v1/time');
-    }
 
     public getExchangeInfo(): Promise<ExchangeInfo> {
         const responseConverter: ResponseConverter = (data: any) => {

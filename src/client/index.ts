@@ -18,7 +18,7 @@ export default class Client {
         account?: Account
     ) {
         this.setOptions(options);
-        this.setAccount(account);
+        this.setAccount(account ?? null);
     }
 
 
@@ -118,8 +118,8 @@ export default class Client {
         this.options = options;
     }
 
-    public setAccount(account?: Account): void {
-        this.account = account ?? null;
+    public setAccount(account: Account | null): void {
+        this.account = account;
     }
 
     public publicRequest<T>(

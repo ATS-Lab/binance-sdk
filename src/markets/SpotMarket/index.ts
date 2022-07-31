@@ -5,26 +5,13 @@ import {MarketOptions} from '../types';
 
 export default class SpotMarket extends Market {
     constructor(options: MarketOptions = {}) {
-        super(options);
-    }
-
-
-    // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
-
-    protected override createUserDataStream(): Promise<string> {
-        return this.baseCreateUserDataStream('/api/v3/userDataStream');
-    }
-
-    protected override keepaliveUserDataStream(): Promise<void> {
-        return this.baseKeepaliveUserDataStream('/api/v3/userDataStream');
-    }
-
-    protected override closeUserDataStream(): Promise<void> {
-        return this.baseCloseUserDataStream('/api/v3/userDataStream');
-    }
-
-    protected override startUserDataStream(): Promise<void> {
-        return this.baseStartUserDataStream();
+        super({
+            testConnectivity: '/api/v3/ping',
+            getServerTime: '/api/v1/time',
+            createUserDataStream: '/api/v3/userDataStream',
+            keepaliveUserDataStream: '/api/v3/userDataStream',
+            closeUserDataStream: '/api/v3/userDataStream'
+        }, options);
     }
 
 
@@ -41,14 +28,6 @@ export default class SpotMarket extends Market {
     }
 
     public override initAccountData(): Promise<void> {
-        return this.baseInitAccountData();
-    }
-
-    public override testConnectivity(): Promise<boolean> {
-        return this.baseTestConnectivity('/api/v3/ping');
-    }
-
-    public override getServerTime(): Promise<number> {
-        return this.baseGetServerTime('api/v1/time');
+        return super.initAccountData();
     }
 }

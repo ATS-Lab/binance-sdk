@@ -805,6 +805,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     public changePositionMode(parameters: {
         dualSidePosition: boolean;
         recvWindow?: number;
+        timestamp?: number;
     }): Promise<boolean> {
         const responseConverter: ResponseConverter = (data: any) => (data.msg == 'success');
         return this.client.privateRequest(

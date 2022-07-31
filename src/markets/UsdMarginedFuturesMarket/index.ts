@@ -36,7 +36,7 @@ import {
     CompositeIndexSymbolInfo,
     BaseAsset,
     MultiAssetsModeAssetIndex,
-    SymbolPrecision
+    SymbolPrecision, MultiAssetsMode
 } from './types';
 import {ResponseConverter} from '../../client/types';
 
@@ -831,12 +831,42 @@ export default class UsdMarginedFuturesMarket extends Market {
         );
     }
 
+    public changeMultiAssetsMode(parameters: {
+        multiAssetsMargin: boolean;
+        recvWindow?: number;
+        timestamp?: number;
+    }): Promise<boolean> {
+        const responseConverter: ResponseConverter = (data: any) => (data.msg == 'success');
+        return this.client.privateRequest(
+            'POST',
+            this.baseEndpoint,
+            '/fapi/v1/multiAssetsMargin',
+            parameters,
+            responseConverter
+        );
+    }
+
+    public getMultiAssetsMode(parameters?: {
+        recvWindow?: number;
+        timestamp?: number;
+    }): Promise<MultiAssetsMode> {
+        const responseConverter: ResponseConverter = (data: any) => (data.multiAssetsMargin ? 'Multi' : 'Single');
+        return this.client.privateRequest(
+            'GET',
+            this.baseEndpoint,
+            '/fapi/v1/multiAssetsMargin',
+            parameters,
+            responseConverter
+        );
+    }
+
     public createOrder(parameters: {
         symbol: string;
         side: Side;
-        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        // Default "BOTH" for One-way Mode; "LONG" or "SHORT" for Hedge Mode. It must be sent in Hedge Mode.
         positionSide?: PositionSide;
         type: OrderType;
+        // Default "GTC"
         timeInForce?: TimeInForce;
         // Cannot be sent with closePosition=true(Close-All).
         quantity?: number;
@@ -852,11 +882,13 @@ export default class UsdMarginedFuturesMarket extends Market {
         activationPrice?: number;
         // Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%.
         callbackRate?: number;
-        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+        // Default "CONTRACT_PRICE".
         workingType?: WorkingType;
-        // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        // Default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
         priceProtect?: boolean;
+        // Default "ACK"
         newOrderRespType?: OrderResponseType;
+        recvWindow?: number;
         timestamp?: number;
     }): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -892,10 +924,11 @@ export default class UsdMarginedFuturesMarket extends Market {
             callbackRate?: number;
             // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
             workingType?: WorkingType;
-            // "TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+            // Default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
             priceProtect?: boolean;
             newOrderRespType?: OrderResponseType;
         }[],
+        recvWindow?: number;
         timestamp?: number;
     }): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -910,7 +943,7 @@ export default class UsdMarginedFuturesMarket extends Market {
     public addTpAndSl(parameters: {
         symbol: string;
         side: Side;
-        // Default BOTH for One-way Mode; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        // Default "BOTH" for One-way Mode; "LONG" or "SHORT" for Hedge Mode. It must be sent in Hedge Mode.
         positionSide?: PositionSide;
         timeInForce?: TimeInForce;
         quantity: number;
@@ -919,7 +952,7 @@ export default class UsdMarginedFuturesMarket extends Market {
         takeProfit: number;
         // %ROE
         stopLoss: number;
-        // stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE".
+        // Default "CONTRACT_PRICE".
         workingType?: WorkingType;
         newOrderRespType?: OrderResponseType;
         timestamp?: number;

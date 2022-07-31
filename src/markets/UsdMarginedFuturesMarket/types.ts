@@ -384,3 +384,5 @@ export type SymbolPrecision = {
     price: number;
     quantity: number;
 };
+
+export type MultiAssetsMode = 'Multi' | 'Single';

@@ -4,7 +4,6 @@ import Client from '../client';
 
 import {PathsCommonMethods, MarketOptions} from './types';
 import {ClientOptions, ResponseConverter} from '../client/types';
-import {Account} from '../types';
 
 
 export default abstract class Market {

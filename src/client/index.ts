@@ -18,14 +18,14 @@ export default class Client {
         account?: Account
     ) {
         this.setOptions(options);
-        this.setAccount(account ?? null);
+        this.account = account ?? null;
     }
 
 
     // ----- [ PRIVATE PROPERTIES ] ------------------------------------------------------------------------------------
 
     private options: ClientOptions;
-    private account: Account | null;
+    private readonly account: Account | null;
 
 
     // ----- [ STATIC PRIVATE METHODS ] --------------------------------------------------------------------------------
@@ -116,10 +116,6 @@ export default class Client {
         Client.validateOptions(options);
 
         this.options = options;
-    }
-
-    public setAccount(account: Account | null): void {
-        this.account = account;
     }
 
     public publicRequest<T>(

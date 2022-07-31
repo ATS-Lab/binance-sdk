@@ -30,6 +30,7 @@ export default abstract class Market {
     protected streamEndpoint: string;
 
     protected isAuthorized: boolean;
+    protected isAccountDataInitialized: boolean;
     protected stream: WebSocket | null;
 
 
@@ -80,29 +81,43 @@ export default abstract class Market {
     }
 
 
+    // ----- [ PROTECTED ABSTRACT METHODS ] ----------------------------------------------------------------------------
+
+    protected abstract setNetwork(isTestnet: boolean): void;
+
+
     // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
     public setClientOptions(options?: ClientOptions): void {
         this.client.setOptions(options);
     }
 
-    public setAccount(account: Account | null): Promise<void> {
-        return new Promise((resolve) => {
-            this.stream?.on('close', () => {
-                this.client.setAccount(account);
-                this.isAuthorized = !!account;
-                resolve();
-            });
-            this.stream?.close();
-        });
-    }
-
     public initAccountData(): Promise<void> {
         if (!this.isAuthorized) {
             return Promise.reject(new Error('Not authorized'));
         }
+        if (this.isAccountDataInitialized) {
+            return Promise.reject(new Error('Account data already initialized'));
+        }
 
         return this.startUserDataStream();
+    }
+
+    public deleteAccountData(): Promise<void> {
+        if (!this.isAuthorized) {
+            return Promise.reject(new Error('Not authorized'));
+        }
+        if (!this.isAccountDataInitialized) {
+            return Promise.reject(new Error('Account data not initialized'));
+        }
+        if (!this.stream) {
+            return Promise.reject(new Error('Stream not yet created'));
+        }
+
+        return new Promise((resolve) => {
+            this.stream?.on('close', resolve);
+            this.stream?.close();
+        });
     }
 
     public testConnectivity(): Promise<boolean> {
@@ -123,15 +138,13 @@ export default abstract class Market {
         if (!this.isAuthorized) {
             throw new Error('Not authorized');
         }
+        if (!this.isAccountDataInitialized) {
+            throw new Error('Account data not initialized');
+        }
         if (!this.stream) {
             throw new Error('Stream not yet created');
         }
 
         return this.stream;
     }
-
-
-    // ----- [ PUBLIC ABSTRACT METHODS ] -------------------------------------------------------------------------------
-
-    public abstract setNetwork(isTestnet: boolean): void;
 }

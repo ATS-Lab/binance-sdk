@@ -15,9 +15,9 @@ export default class SpotMarket extends Market {
     }
 
 
-    // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
+    // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
-    public override setNetwork(isTestnet: boolean): void {
+    protected override setNetwork(isTestnet: boolean): void {
         if (isTestnet) {
             this.baseEndpoint = 'testnet.binance.vision';
             this.streamEndpoint = 'wss://testnet.binance.vision';
@@ -27,7 +27,17 @@ export default class SpotMarket extends Market {
         }
     }
 
+
+    // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
+
     public override initAccountData(): Promise<void> {
-        return super.initAccountData();
+        return new Promise((resolve, reject) => {
+            super.initAccountData()
+                .then(() => {
+                    this.isAccountDataInitialized = true;
+                    resolve();
+                })
+                .catch(reject);
+        });
     }
 }

@@ -41,7 +41,6 @@ import {
     mapIndexPriceCandlestick,
     mapMarkPriceCandlestick
 } from '../../utils';
-import {Account} from '../../types';
 
 
 export default class UsdMarginedFuturesMarket extends Market {
@@ -72,8 +71,6 @@ export default class UsdMarginedFuturesMarket extends Market {
                 this.getPositionInfo()
             ])
                 .then(([positionMode, positionsInfo]) => {
-                    this.leverage.clear();
-
                     const step = positionMode == 'ONE_WAY' ? 1 : 2;
                     for (let i = 0; i < positionsInfo.length; i += step) {
                         this.leverage.set(positionsInfo[i].symbol, positionsInfo[i].leverage);
@@ -88,14 +85,7 @@ export default class UsdMarginedFuturesMarket extends Market {
 
     // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
-    protected override startUserDataStream(): Promise<void> {
-        return super.startUserDataStream();
-    }
-
-
-    // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
-
-    public override setNetwork(isTestnet: boolean): void {
+    protected override setNetwork(isTestnet: boolean): void {
         if (isTestnet) {
             this.baseEndpoint = 'testnet.binancefuture.com';
             this.streamEndpoint = 'wss://stream.binancefuture.com';
@@ -105,18 +95,34 @@ export default class UsdMarginedFuturesMarket extends Market {
         }
     }
 
-    public override setAccount(account: Account | null): Promise<void> {
-        this.leverage.clear();
-        return super.setAccount(account);
-    }
+
+    // ----- [ PUBLIC METHODS ] ----------------------------------------------------------------------------------------
 
     public override initAccountData(): Promise<void> {
         return new Promise((resolve, reject) => {
-            Promise.all([
-                super.initAccountData(),
-                this.initLeverage()
-            ])
-                .then(() => resolve())
+            super.initAccountData()
+                .then(() => {
+                    Promise.all([
+                        this.initLeverage()
+                    ])
+                        .then(() => {
+                            this.isAccountDataInitialized = true;
+                            resolve();
+                        })
+                        .catch(reject);
+                })
+                .catch(reject);
+        });
+    }
+
+    public override deleteAccountData(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            super.deleteAccountData()
+                .then(() => {
+                    this.leverage.clear();
+                    this.isAccountDataInitialized = false;
+                    resolve();
+                })
                 .catch(reject);
         });
     }
@@ -127,6 +133,9 @@ export default class UsdMarginedFuturesMarket extends Market {
     public getLeverage(symbol?: string): Map<string, number> | number {
         if (!this.isAuthorized) {
             throw new Error('Not authorized');
+        }
+        if (!this.isAccountDataInitialized) {
+            throw new Error('Account data not initialized');
         }
 
         if (symbol) {

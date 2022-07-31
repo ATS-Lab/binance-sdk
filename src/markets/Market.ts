@@ -1,3 +1,4 @@
+import EventEmitter from 'events';
 import WebSocket from 'ws';
 
 import Client from '../client';
@@ -9,10 +10,12 @@ import {ClientOptions, ResponseConverter} from '../client/types';
 export default abstract class Market {
     protected constructor(paths: PathsCommonMethods, options: MarketOptions) {
         this.paths = paths;
+
         this.client = new Client(options.clientOptions, options.account);
+        this.eventEmitter = new EventEmitter();
+        this.isAuthorized = !!options.account;
 
         this.setNetwork(!!options.isTestnet);
-        this.isAuthorized = !!options.account;
     }
 
 
@@ -31,6 +34,11 @@ export default abstract class Market {
     protected isAuthorized: boolean;
     protected isAccountDataInitialized: boolean;
     protected stream: WebSocket | null;
+
+
+    // ----- [ PUBLIC PROPERTIES ] -------------------------------------------------------------------------------------
+
+    public readonly eventEmitter: EventEmitter;
 
 
     // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
@@ -67,6 +75,11 @@ export default abstract class Market {
 
                     this.stream.on('open', () => {
                         resolve();
+                    });
+
+                    this.stream.on('message', (rawData) => {
+                        const data = JSON.parse(rawData.toString());
+                        this.eventEmitter.emit(data.e, data);
                     });
 
                     this.stream.on('close', () => {
@@ -119,6 +132,10 @@ export default abstract class Market {
             this.stream?.on('close', resolve);
             this.stream?.close();
         });
+    }
+
+    public on(event: string, listener: (data: any) => void): void {
+        this.eventEmitter.on(event, listener);
     }
 
     // Market data endpoints

@@ -113,6 +113,19 @@ export default class UsdMarginedFuturesMarket extends Market {
         });
     }
 
+    private addEventHandlers(): void {
+        this.eventEmitter.on('ACCOUNT_CONFIG_UPDATE', (data) => {
+            if (data.ac) { // When the leverage of a trade pair changes
+                // s represents the specific trade pair
+                // l represents the leverage
+                this.leverage.set(data.ac.s, data.ac.l);
+            }
+        });
+
+        this.eventEmitter.on('ORDER_TRADE_UPDATE', (data) => {
+            if (data.o.X == 'FILLED') { }
+        });
+    }
 
     // ----- [ PROTECTED METHODS ] -------------------------------------------------------------------------------------
 
@@ -138,6 +151,7 @@ export default class UsdMarginedFuturesMarket extends Market {
                         this.initSymbolPrecision()
                     ])
                         .then(() => {
+                            this.addEventHandlers();
                             this.isAccountDataInitialized = true;
                             resolve();
                         })

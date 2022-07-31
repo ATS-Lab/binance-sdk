@@ -90,11 +90,11 @@ export default class Client {
                 });
 
                 incomingMessage.on('end', () => {
-                    response = JSON.parse(response);
-
                     if (incomingMessage.statusCode === 200) {
+                        response = JSON.parse(response);
                         resolve(Client.processResponse(response, responseConverter));
                     } else {
+                        response = JSON.parse(response.replace(/\\+/g, '\\\\'));
                         reject(response);
                     }
                 });
